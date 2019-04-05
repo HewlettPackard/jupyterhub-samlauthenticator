@@ -243,8 +243,7 @@ class SAMLAuthenticator(Authenticator):
 
         return xpath_with_namespaces
 
-    def _verify_saml_response_fields(self, saml_metadata, signed_xml):
-        # TODO: this
+    def _verify_saml_response_against_metadata(self, saml_metadata, signed_xml):
         xpath_with_namespaces = self._make_xpath_builder()
 
         find_entity_id = xpath_with_namespaces('//saml:Issuer/text()')
@@ -266,6 +265,11 @@ class SAMLAuthenticator(Authenticator):
             if not saml_metadata_entity_id_list:
                 self.log.error('The entity ID was not set in the SAML metadata')
             return False
+
+        return True
+
+    def _verify_saml_response_against_configured_fields(self, signed_xml):
+        xpath_with_namespaces = self._make_xpath_builder()
 
         if self.audience:
             find_audience = xpath_with_namespaces('//saml:Audience/text()')
@@ -293,6 +297,11 @@ class SAMLAuthenticator(Authenticator):
                 self.log.error('Could not find recipient in SAML response')
                 return False
 
+        return True
+
+    def _verify_physical_constraints(self, signed_xml):
+        xpath_with_namespaces = self._make_xpath_builder()
+
         find_not_before = xpath_with_namespaces('//saml:Conditions/@NotBefore')
         find_not_on_or_after = xpath_with_namespaces('//saml:Conditions/@NotOnOrAfter')
 
@@ -318,7 +327,24 @@ class SAMLAuthenticator(Authenticator):
                 self.log.error('SAML assertion must have NotOnOrAfter annotation in Conditions')
             return False
 
-        return 'Valid SAML Response'
+        return True
+
+    def _verify_saml_response_fields(self, saml_metadata, signed_xml):
+        # TODO: this
+        if not self._verify_saml_response_against_metadata(saml_metadata, signed_xml):
+            self.log.error('The SAML Assertion did not match the provided metadata')
+            return False
+
+        if not self._verify_saml_response_against_configured_fields(signed_xml):
+            self.log.error('The SAML Assertion did not match the configured values')
+            return False
+
+        if not self._verify_physical_constraints(signed_xml):
+            self.log.error('The SAML Assertion did not match the physical constraints')
+            return False
+
+        self.log.info('The SAML Assertion matched the configured values')
+        return True
 
     def _test_valid_saml_response(self, saml_metadata, decoded_saml_doc):
         signed_xml = self._verify_saml_signature(saml_metadata, decoded_saml_doc)
@@ -338,14 +364,14 @@ class SAMLAuthenticator(Authenticator):
             if xpath_result:
                 return xpath_result[0]
 
-        self.log.info('Did not get user location from SAML Response group xpaths')
+        self.log.info('Did not get user location from SAML Response group XPaths')
 
         xpath_fun = xpath_with_namespaces(self.xpath_username_location)
         xpath_result = xpath_fun(signed_xml)
         if xpath_result:
             return xpath_result[0]
 
-        self.log.info('Could not find name from name xpath')
+        self.log.info('Could not find name from name XPath')
 
         return None
 
@@ -358,7 +384,7 @@ class SAMLAuthenticator(Authenticator):
             if xpath_result:
                 return xpath_result[0]
 
-        self.log.info('Did not get user location from SAML Response group xpaths in decoded doc')
+        self.log.info('Did not get user location from SAML Response group XPaths in decoded doc')
 
         xpath_fun = xpath_with_namespaces(self.xpath_username_location)
         xpath_result = xpath_fun(decoded_saml_doc)
