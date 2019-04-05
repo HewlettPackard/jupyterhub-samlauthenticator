@@ -21,6 +21,8 @@ class SAMLAuthenticator(Authenticator):
         allow_none=True,
         config=True,
         help='''
+        A filepath to the location of the SAML IdP metadata. This is the most preferable
+        option for presenting an IdP's metadata to the authenticator.
         '''
     )
     metadata_content = Unicode(
@@ -28,6 +30,10 @@ class SAMLAuthenticator(Authenticator):
         allow_none=True,
         config=True,
         help='''
+        A fully-inlined version of the SAML IdP metadata. Mostly provided for testing,
+        but if you want to use this for a "production-type" system, I'm not going to
+        judge. This is preferred above getting metadata from a web-request, but not
+        preferred above getting the metadata from a file.
         '''
     )
     metadata_url = Unicode(
@@ -35,13 +41,29 @@ class SAMLAuthenticator(Authenticator):
         allow_none=True,
         config=True,
         help='''
+        A URL where the SAML Authenticator can find metadata for the SAML IdP. This is
+        the least preferable method of providing the SAML IdP metadata to the
+        authenticator, as it is both slow and vulnerable to Man in the Middle attacks,
+        including DNS poisoning.
         '''
     )
     xpath_username_location = Unicode(
-        default_value='//NameID/text()',
+        default_value='//saml:NameID/text()',
         allow_none=True,
         config=True,
         help='''
+        This is an XPath that specifies where the user's name or id is located in the
+        SAML Assertion. This is partly for testing purposes, but there are cases where
+        an administrator may want a user to be identified by their email address instead
+        of an LDAP DN or another string that comes in the NameID field. The namespace
+        bindings when executing the XPath will be as follows:
+
+        {
+            'ds'   : 'http://www.w3.org/2000/09/xmldsig#',
+            'md'   : 'urn:oasis:names:tc:SAML:2.0:metadata',
+            'saml' : 'urn:oasis:names:tc:SAML:2.0:assertion',
+            'samlp': 'urn:oasis:names:tc:SAML:2.0:protocol'
+        }
         '''
     )
     xpath_user_group_location = List(
@@ -49,6 +71,18 @@ class SAMLAuthenticator(Authenticator):
         allow_none=True,
         config=True,
         help='''
+        This is a list of XPaths that specify where in the SAML Response the
+        Authenticator should be looking to find group information for the authenticated
+        user. This should ONLY be used if ALL users with a given group need to have
+        access to the same workspace. The namespace bindings when executing the XPaths
+        will be as follows:
+
+        {
+            'ds'   : 'http://www.w3.org/2000/09/xmldsig#',
+            'md'   : 'urn:oasis:names:tc:SAML:2.0:metadata',
+            'saml' : 'urn:oasis:names:tc:SAML:2.0:assertion',
+            'samlp': 'urn:oasis:names:tc:SAML:2.0:protocol'
+        }
         '''
     )
     login_post_field = Unicode(
@@ -56,6 +90,8 @@ class SAMLAuthenticator(Authenticator):
         allow_none=False,
         config=True,
         help='''
+        This value specifies what field in the SAML Post request contains the Base-64
+        encoded SAML Response.
         '''
     )
     audience = Unicode(
@@ -63,6 +99,10 @@ class SAMLAuthenticator(Authenticator):
         allow_none=True,
         config=True,
         help='''
+        The SAML Audience must be configured in the SAML IdP. This value ensures that a
+        SAML assertion cannot be used by a malicious service to authenticate to a naive
+        service. If this value is not set in the configuration file or if the string
+        provided is a "false-y" value in python, this will not be checked.
         '''
     )
     recipient = Unicode(
@@ -70,6 +110,10 @@ class SAMLAuthenticator(Authenticator):
         allow_none=True,
         config=True,
         help='''
+        The SAML Recipient must be configured in the SAML IdP. This value ensures that a
+        SAML assertion cannot be used by a malicious service to authenticate to a naive
+        service. If this value is not set in the configuration file or if the string
+        provided is a "false-y" value in python, this will not be checked.
         '''
     )
     time_format_string = Unicode(
@@ -77,6 +121,12 @@ class SAMLAuthenticator(Authenticator):
         allow_none=False,
         config=True,
         help='''
+        A time format string that complies with python's strftime()/strptime() behavior.
+        For more information on this format, please read the information at the
+        following link:
+
+        https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
+
         '''
     )
 
