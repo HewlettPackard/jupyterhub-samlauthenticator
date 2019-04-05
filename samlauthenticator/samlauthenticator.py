@@ -260,7 +260,11 @@ class SAMLAuthenticator(Authenticator):
                 self.log.error('Response entity id: %s', saml_resp_entity_id_list[0])
                 return False
         else:
-            # TODO: Log here
+            self.log.error('The entity ID needs to be set in both the metadata and the SAML Response')
+            if not saml_resp_entity_id_list:
+                self.log.error('The entity ID was not set in the SAML Response')
+            if not saml_metadata_entity_id_list:
+                self.log.error('The entity ID was not set in the SAML metadata')
             return False
 
         if self.audience:
@@ -273,7 +277,7 @@ class SAMLAuthenticator(Authenticator):
                     self.log.error('Response audience: %s', saml_resp_audience_list[0])
                     return False
             else:
-                # TODO: Log here
+                self.log.error('SAML Audience was set in authenticator config file, but not in SAML Response')
                 return False
 
         if self.recipient:
