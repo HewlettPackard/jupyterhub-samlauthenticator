@@ -1,0 +1,5 @@
+# Environment
+venv/
+
+# Compiled files
+*.py[cod]
