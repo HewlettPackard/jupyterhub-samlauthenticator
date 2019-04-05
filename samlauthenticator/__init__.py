@@ -1,0 +1,2 @@
+
+from samlauthenticator.samlauthenticator import SAMLAuthenticator
