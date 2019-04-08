@@ -156,7 +156,7 @@ class SAMLAuthenticator(Authenticator):
         self.log.warn('Error expression: %s', exception.expression)
         self.log.warn('Error message: %s', exception.message)
 
-    def _get_decoded_saml_doc(self, data):
+    def _get_saml_doc_etree(self, data):
         saml_response = data.get(self.login_post_field, None)
 
         if not saml_response:
@@ -176,7 +176,13 @@ class SAMLAuthenticator(Authenticator):
             self.log.warn('Saml Response: %s', saml_response)
             self._log_exception_error(e)
 
-        return decoded_saml_doc
+        try:
+            return etree.fromstring(decoded_saml_doc)
+        except Exception as e:
+            self.log.warn('Got exception when attempting to hydrate response to etree')
+            self.log.warn('Saml Response: %s', decoded_saml_doc)
+            self._log_exception_error(e)
+            return None
 
     def _get_saml_metadata_etree(self):
         try:
@@ -350,9 +356,9 @@ class SAMLAuthenticator(Authenticator):
 
         if not signed_xml:
             self.log.error('Failed to verify signature on SAML Response')
-            return False
+            return False, None
 
-        return self._test_saml_response_fields(saml_metadata, signed_xml)
+        return self._test_saml_response_fields(saml_metadata, signed_xml), signed_xml
 
     def _get_username_from_signed_saml_doc(self, signed_xml):
         xpath_with_namespaces = self._make_xpath_builder()
@@ -394,9 +400,7 @@ class SAMLAuthenticator(Authenticator):
 
         return None
 
-    def _get_username_from_saml_doc(self, saml_metadata, decoded_saml_doc):
-        signed_xml = self._verify_saml_signature(saml_metadata, decoded_saml_doc)
-
+    def _get_username_from_saml_doc(self, signed_xml, decoded_saml_doc):
         user_name = self._get_username_from_signed_saml_doc(signed_xml)
         if user_name:
             return user_name
@@ -408,20 +412,22 @@ class SAMLAuthenticator(Authenticator):
 
     @gen.coroutine
     def authenticate(self, handler, data):
-        decoded_saml_doc = self._get_decoded_saml_doc(data)
+        saml_doc_etree = self._get_saml_doc_etree(data)
         
-        if not decoded_saml_doc:
+        if not saml_doc_etree:
             self.log.error('Error getting decoded SAML Response')
             return None
 
-        saml_metadata = self._get_saml_metadata_etree()
+        saml_metadata_etree = self._get_saml_metadata_etree()
 
-        if not saml_metadata:
+        if not saml_metadata_etree:
             self.log.error('Error getting SAML Metadata')
             return None
 
-        if self._test_valid_saml_response(saml_metadata, decoded_saml_doc):
-            return self._get_username_from_saml_doc(saml_metadata, decoded_saml_doc)
+        valid_saml_response, signed_xml = self._test_valid_saml_response(saml_metadata_etree, saml_doc_etree)
+
+        if valid_saml_response:
+            return self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
 
         self.log.error('Error validating SAML response')
         return None
