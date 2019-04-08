@@ -3,6 +3,7 @@
 # Imports from python standard library
 from base64 import b64decode
 from datetime import datetime
+from urllib.request import urlopen
 
 # Imports to work with JupyterHub
 from jupyterhub.auth import Authenticator
@@ -12,8 +13,6 @@ from traitlets import Unicode, List
 # Imports for me
 from signxml import XMLVerifier
 from lxml import etree
-
-import urllib
 
 class SAMLAuthenticator(Authenticator):
     metadata_filepath = Unicode(
@@ -138,7 +137,7 @@ class SAMLAuthenticator(Authenticator):
         return self.metadata_content
 
     def _get_metadata_from_url(self):
-        with urllib.urlopen(self.metadata_url) as remote_metadata:
+        with urlopen(self.metadata_url) as remote_metadata:
             return remote_metadata.read()
 
     def _get_preferred_metadata_from_source(self):
