@@ -345,6 +345,10 @@ class TestValidSamlResponse(object):
         a = SAMLAuthenticator()
         verified_signed_xml = XMLVerifier().verify(self.response_etree, x509_cert=x509_cert).signed_xml
 
+        signed_xml = a._verify_saml_signature(self.metadata_etree, self.response_etree)
+
+        assert etree.tostring(signed_xml) == etree.tostring(verified_signed_xml)
+
         response_is_valid, signed_xml = a._test_valid_saml_response(self.metadata_etree, self.response_etree)
 
         assert response_is_valid
@@ -355,6 +359,10 @@ class TestValidSamlResponse(object):
         a = SAMLAuthenticator()
         tampered_etree = etree.fromstring(tampered_sample_response_xml)
 
+        bad_signed_xml = a._verify_saml_signature(self.metadata_etree, tampered_etree)
+
+        assert bad_signed_xml is None
+
         response_is_valid, signed_xml = a._test_valid_saml_response(self.metadata_etree, tampered_etree)
 
         assert not response_is_valid
@@ -363,6 +371,10 @@ class TestValidSamlResponse(object):
     def test_no_metadata_cert(self):
         a = SAMLAuthenticator()
         no_cert_metadata_etree = etree.fromstring(sample_metadata_no_cert_xml)
+
+        bad_signed_xml = a._verify_saml_signature(no_cert_metadata_etree, self.response_etree)
+
+        assert bad_signed_xml is None
 
         response_is_valid, signed_xml = a._test_valid_saml_response(no_cert_metadata_etree, self.response_etree)
 
