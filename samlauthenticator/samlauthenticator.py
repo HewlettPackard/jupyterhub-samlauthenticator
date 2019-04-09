@@ -119,7 +119,7 @@ class SAMLAuthenticator(Authenticator):
         '''
     )
     time_format_string = Unicode(
-        default_value='%Y-%m-%dT%H:%M:%S%Z',
+        default_value='%Y-%m-%dT%H:%M:%SZ',
         allow_none=False,
         config=True,
         help='''
@@ -317,11 +317,13 @@ class SAMLAuthenticator(Authenticator):
         not_on_or_after_list = find_not_on_or_after(signed_xml)
 
         if not_before_list and not_on_or_after_list:
+
             not_before_datetime = datetime.strptime(not_before_list[0], self.time_format_string)
             not_on_or_after_datetime = datetime.strptime(not_on_or_after_list[0], self.time_format_string)
             not_before_datetime = not_before_datetime.replace(tzinfo=timezone.utc)
             not_on_or_after_datetime = not_on_or_after_datetime.replace(tzinfo=timezone.utc)
             now = datetime.now(timezone.utc)
+
             if now < not_before_datetime or now >= not_on_or_after_datetime:
                 self.log.warning('Bad timing condition')
                 if now < not_before_datetime:
