@@ -3,3 +3,4 @@ venv/
 
 # Compiled files
 *.py[cod]
+*.coverage
