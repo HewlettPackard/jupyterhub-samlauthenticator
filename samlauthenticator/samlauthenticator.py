@@ -5,6 +5,7 @@ from base64 import b64decode
 from datetime import datetime, timezone
 from urllib.request import urlopen
 
+import pwd
 import subprocess
 
 # Imports to work with JupyterHub
@@ -413,10 +414,15 @@ class SAMLAuthenticator(Authenticator):
 
         return self._get_username_from_decoded_saml_doc(decoded_saml_doc)
 
-    def _do_user_add(self, username):
-        # Return the `not` here because a 0 return indicates success and I want to
-        # say something like "if adding the user is successful, return username"
-        return not subprocess.call(['useradd', username])
+    def _optional_user_add(self, username):
+        try:
+            pwd.getpwnam(username)
+            # Found the user, we don't need to create them
+            return True
+        except KeyError:
+            # Return the `not` here because a 0 return indicates success and I want to
+            # say something like "if adding the user is successful, return username"
+            return not subprocess.call(['useradd', username])
 
     @gen.coroutine
     def authenticate(self, handler, data):
@@ -437,8 +443,8 @@ class SAMLAuthenticator(Authenticator):
         if valid_saml_response:
             self.log.debug('Authenticated user using SAML')
             Un = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
-            if self._do_user_add(Un):
-                self.log.debug('Return user: ' + Un)
+            self.log.debug('Optionally create and return user: ' + Un)
+            if self._optional_user_add(Un):
                 return Un
             else:
                 self.log.error('Failed to add user')
