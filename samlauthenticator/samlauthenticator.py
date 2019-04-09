@@ -153,17 +153,16 @@ class SAMLAuthenticator(Authenticator):
         return None
 
     def _log_exception_error(self, exception):
-        self.log.warn('Error expression: %s', exception.expression)
-        self.log.warn('Error message: %s', exception.message)
+        self.log.warning('Expression: %s', str(exception))
 
     def _get_saml_doc_etree(self, data):
         saml_response = data.get(self.login_post_field, None)
 
         if not saml_response:
             # Failed to get the SAML Response from the posted data
-            self.log.warn('Could not get SAML Response from post data')
-            self.log.warn('Expected SAML response in field %s', self.login_post_field)
-            self.log.warn('Posted login data %s', str(data))
+            self.log.warning('Could not get SAML Response from post data')
+            self.log.warning('Expected SAML response in field %s', self.login_post_field)
+            self.log.warning('Posted login data %s', str(data))
             return None
 
         decoded_saml_doc = None
@@ -172,15 +171,16 @@ class SAMLAuthenticator(Authenticator):
             decoded_saml_doc = b64decode(saml_response)
         except Exception as e:
             # There was a problem base64 decoding the xml document from the posted data
-            self.log.warn('Got exception when attempting to decode SAML response')
-            self.log.warn('Saml Response: %s', saml_response)
+            self.log.warning('Got exception when attempting to decode SAML response')
+            self.log.warning('Saml Response: %s', saml_response)
             self._log_exception_error(e)
+            return None
 
         try:
             return etree.fromstring(decoded_saml_doc)
         except Exception as e:
-            self.log.warn('Got exception when attempting to hydrate response to etree')
-            self.log.warn('Saml Response: %s', decoded_saml_doc)
+            self.log.warning('Got exception when attempting to hydrate response to etree')
+            self.log.warning('Saml Response: %s', decoded_saml_doc)
             self._log_exception_error(e)
             return None
 
@@ -189,18 +189,18 @@ class SAMLAuthenticator(Authenticator):
             saml_metadata = self._get_preferred_metadata_from_source()
         except Exception as e:
             # There was a problem getting the SAML metadata
-            self.log.warn('Got exception when attempting to read SAML metadata')
-            self.log.warn('Ensure that EXACTLY ONE of metadata_filepath, ' +
+            self.log.warning('Got exception when attempting to read SAML metadata')
+            self.log.warning('Ensure that EXACTLY ONE of metadata_filepath, ' +
                            'metadata_content, and metadata_url is populated')
             self._log_exception_error(e)
             return None
 
         if not saml_metadata:
             # There was a problem getting the SAML metadata
-            self.log.warn('Got exception when attempting to read SAML metadata')
-            self.log.warn('Ensure that EXACTLY ONE of metadata_filepath, ' +
+            self.log.warning('Got exception when attempting to read SAML metadata')
+            self.log.warning('Ensure that EXACTLY ONE of metadata_filepath, ' +
                            'metadata_content, and metadata_url is populated')
-            self.log.warn('SAML metadata was empty')
+            self.log.warning('SAML metadata was empty')
             return None
 
         metadata_etree = None
@@ -209,7 +209,7 @@ class SAMLAuthenticator(Authenticator):
             metadata_etree = etree.fromstring(saml_metadata)
         except Exception as e:
             # Failed to parse SAML Metadata
-            self.log.warn('Got exception when attempting to parse SAML metadata')
+            self.log.warning('Got exception when attempting to parse SAML metadata')
             self._log_exception_error(e)
 
         return metadata_etree
@@ -222,7 +222,7 @@ class SAMLAuthenticator(Authenticator):
         try:
             cert_value = find_cert(saml_metadata)[0]
         except Exception as e:
-            self.log.warn('Could not get cert value from saml metadata')
+            self.log.warning('Could not get cert value from saml metadata')
             self._log_exception_error(e)
             return None
 
@@ -230,7 +230,7 @@ class SAMLAuthenticator(Authenticator):
         try:
             signed_xml = XMLVerifier().verify(decoded_saml_doc, x509_cert=cert_value).signed_xml
         except Exception as e:
-            self.log.warn('Failed to verify signature on SAML Response')
+            self.log.warning('Failed to verify signature on SAML Response')
             self._log_exception_error(e)
 
         return signed_xml
