@@ -2,8 +2,10 @@
 
 # Imports from python standard library
 from base64 import b64decode
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib.request import urlopen
+
+import subprocess
 
 # Imports to work with JupyterHub
 from jupyterhub.auth import Authenticator
@@ -153,7 +155,7 @@ class SAMLAuthenticator(Authenticator):
         return None
 
     def _log_exception_error(self, exception):
-        self.log.warning('Expression: %s', str(exception))
+        self.log.warning('Exception: %s', str(exception))
 
     def _get_saml_doc_etree(self, data):
         saml_response = data.get(self.login_post_field, None)
@@ -235,7 +237,7 @@ class SAMLAuthenticator(Authenticator):
 
         return signed_xml
 
-    def _make_xpath_builder():
+    def _make_xpath_builder(self):
         namespaces = {
             'ds'   : 'http://www.w3.org/2000/09/xmldsig#',
             'md'   : 'urn:oasis:names:tc:SAML:2.0:metadata',
@@ -244,7 +246,7 @@ class SAMLAuthenticator(Authenticator):
         }
 
         def xpath_with_namespaces(xpath_str):
-            return etree.xpath(xpath_str, namespaces=namespaces)
+            return etree.XPath(xpath_str, namespaces=namespaces)
 
         return xpath_with_namespaces
 
@@ -316,7 +318,9 @@ class SAMLAuthenticator(Authenticator):
         if not_before_list and not_on_or_after_list:
             not_before_datetime = datetime.strptime(not_before_list[0], self.time_format_string)
             not_on_or_after_datetime = datetime.strptime(not_on_or_after_list[0], self.time_format_string)
-            now = datetime.now()
+            not_before_datetime = not_before_datetime.replace(tzinfo=timezone.utc)
+            not_on_or_after_datetime = not_on_or_after_datetime.replace(tzinfo=timezone.utc)
+            now = datetime.now(timezone.utc)
             if now < not_before_datetime or now >= not_on_or_after_datetime:
                 self.log.error('Bad timing condition')
                 if now < not_before_datetime:
@@ -358,7 +362,7 @@ class SAMLAuthenticator(Authenticator):
             self.log.error('Failed to verify signature on SAML Response')
             return False, None
 
-        return self._test_saml_response_fields(saml_metadata, signed_xml), signed_xml
+        return self._verify_saml_response_fields(saml_metadata, signed_xml), signed_xml
 
     def _get_username_from_signed_saml_doc(self, signed_xml):
         xpath_with_namespaces = self._make_xpath_builder()
@@ -409,6 +413,10 @@ class SAMLAuthenticator(Authenticator):
 
         return self._get_username_from_decoded_saml_doc(decoded_saml_doc)
 
+    def _do_user_add(self, username):
+        # Return the `not` here because a 0 return indicates success and I want to
+        # say something like "if adding the user is successful, return username"
+        return not subprocess.call(['useradd', username])
 
     @gen.coroutine
     def authenticate(self, handler, data):
@@ -427,7 +435,14 @@ class SAMLAuthenticator(Authenticator):
         valid_saml_response, signed_xml = self._test_valid_saml_response(saml_metadata_etree, saml_doc_etree)
 
         if valid_saml_response:
-            return self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
+            self.log.debug('Authenticated user using SAML')
+            Un = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
+            if self._do_user_add(Un):
+                self.log.debug('Return user: ' + Un)
+                return Un
+            else:
+                self.log.error('Failed to add user')
+                return None
 
         self.log.error('Error validating SAML response')
         return None

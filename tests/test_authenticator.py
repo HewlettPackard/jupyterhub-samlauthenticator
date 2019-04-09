@@ -9,6 +9,7 @@ from samlauthenticator import SAMLAuthenticator
 
 
 class TestMetadataRetrieval(object):
+    # TODO: move metadata xml inside this object
     def _test_high_level_metadata_retrieval_functions(self, authenticator):
         assert authenticator._get_preferred_metadata_from_source() == sample_simplified_metadata_xml
 
@@ -110,6 +111,7 @@ class TestMetadataRetrieval(object):
 
 
 class TestSAMLDocRetrieval(object):
+    # TODO: move SAMLResponse inside this object
     def test_get_saml_doc_etree(self):
         # We expect the SAML Response to be coming in base 64 encoded
         a = SAMLAuthenticator()
