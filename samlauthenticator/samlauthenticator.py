@@ -262,16 +262,16 @@ class SAMLAuthenticator(Authenticator):
 
         if saml_resp_entity_id_list and saml_metadata_entity_id_list:
             if saml_metadata_entity_id_list[0] != saml_resp_entity_id_list[0]:
-                self.log.error('Metadata entity id did not match the response entity id')
-                self.log.error('Metadata entity id: %s', saml_metadata_entity_id_list[0])
-                self.log.error('Response entity id: %s', saml_resp_entity_id_list[0])
+                self.log.warning('Metadata entity id did not match the response entity id')
+                self.log.warning('Metadata entity id: %s', saml_metadata_entity_id_list[0])
+                self.log.warning('Response entity id: %s', saml_resp_entity_id_list[0])
                 return False
         else:
-            self.log.error('The entity ID needs to be set in both the metadata and the SAML Response')
+            self.log.warning('The entity ID needs to be set in both the metadata and the SAML Response')
             if not saml_resp_entity_id_list:
-                self.log.error('The entity ID was not set in the SAML Response')
+                self.log.warning('The entity ID was not set in the SAML Response')
             if not saml_metadata_entity_id_list:
-                self.log.error('The entity ID was not set in the SAML metadata')
+                self.log.warning('The entity ID was not set in the SAML metadata')
             return False
 
         return True
@@ -284,12 +284,12 @@ class SAMLAuthenticator(Authenticator):
             saml_resp_audience_list = find_audience(signed_xml)
             if saml_resp_audience_list:
                 if saml_resp_audience_list[0] != self.audience:
-                    self.log.error('Configured audience did not match the response audience')
-                    self.log.error('Configured audience: %s', self.audience)
-                    self.log.error('Response audience: %s', saml_resp_audience_list[0])
+                    self.log.warning('Configured audience did not match the response audience')
+                    self.log.warning('Configured audience: %s', self.audience)
+                    self.log.warning('Response audience: %s', saml_resp_audience_list[0])
                     return False
             else:
-                self.log.error('SAML Audience was set in authenticator config file, but not in SAML Response')
+                self.log.warning('SAML Audience was set in authenticator config file, but not in SAML Response')
                 return False
 
         if self.recipient:
@@ -297,12 +297,12 @@ class SAMLAuthenticator(Authenticator):
             recipient_list = find_recipient(signed_xml)
             if recipient_list:
                 if self.recipient != recipient_list[0]:
-                    self.log.error('Configured recipient did not match the response recipient')
-                    self.log.error('Configured recipient: %s', self.recipient)
-                    self.log.error('Response recipient: %s', recipient_list[0])
+                    self.log.warning('Configured recipient did not match the response recipient')
+                    self.log.warning('Configured recipient: %s', self.recipient)
+                    self.log.warning('Response recipient: %s', recipient_list[0])
                     return False
             else:
-                self.log.error('Could not find recipient in SAML response')
+                self.log.warning('Could not find recipient in SAML response')
                 return False
 
         return True
@@ -323,18 +323,18 @@ class SAMLAuthenticator(Authenticator):
             not_on_or_after_datetime = not_on_or_after_datetime.replace(tzinfo=timezone.utc)
             now = datetime.now(timezone.utc)
             if now < not_before_datetime or now >= not_on_or_after_datetime:
-                self.log.error('Bad timing condition')
+                self.log.warning('Bad timing condition')
                 if now < not_before_datetime:
-                    self.log.error('Sent SAML Response before it was permitted')
+                    self.log.warning('Sent SAML Response before it was permitted')
                 if now >= not_on_or_after_datetime:
-                    self.log.error('Sent SAML Response after it was permitted')
+                    self.log.warning('Sent SAML Response after it was permitted')
                 return False
         else:
-            self.log.error('SAML assertion did not contain proper conditions')
+            self.log.warning('SAML assertion did not contain proper conditions')
             if not not_before_list:
-                self.log.error('SAML assertion must have NotBefore annotation in Conditions')
+                self.log.warning('SAML assertion must have NotBefore annotation in Conditions')
             if not not_on_or_after_list:
-                self.log.error('SAML assertion must have NotOnOrAfter annotation in Conditions')
+                self.log.warning('SAML assertion must have NotOnOrAfter annotation in Conditions')
             return False
 
         return True
@@ -342,15 +342,15 @@ class SAMLAuthenticator(Authenticator):
     def _verify_saml_response_fields(self, saml_metadata, signed_xml):
         # TODO: this
         if not self._verify_saml_response_against_metadata(saml_metadata, signed_xml):
-            self.log.error('The SAML Assertion did not match the provided metadata')
+            self.log.warning('The SAML Assertion did not match the provided metadata')
             return False
 
         if not self._verify_saml_response_against_configured_fields(signed_xml):
-            self.log.error('The SAML Assertion did not match the configured values')
+            self.log.warning('The SAML Assertion did not match the configured values')
             return False
 
         if not self._verify_physical_constraints(signed_xml):
-            self.log.error('The SAML Assertion did not match the physical constraints')
+            self.log.warning('The SAML Assertion did not match the physical constraints')
             return False
 
         self.log.info('The SAML Assertion matched the configured values')
@@ -360,7 +360,7 @@ class SAMLAuthenticator(Authenticator):
         signed_xml = self._verify_saml_signature(saml_metadata, decoded_saml_doc)
 
         if not signed_xml:
-            self.log.error('Failed to verify signature on SAML Response')
+            self.log.warning('Failed to verify signature on SAML Response')
             return False, None
 
         return self._verify_saml_response_fields(saml_metadata, signed_xml), signed_xml
@@ -401,7 +401,7 @@ class SAMLAuthenticator(Authenticator):
         if xpath_result:
             return xpath_result[0]
 
-        self.log.error('Failed to find valid user name')
+        self.log.warning('Failed to find valid user name')
 
         return None
 
