@@ -361,7 +361,7 @@ class SAMLAuthenticator(Authenticator):
     def _test_valid_saml_response(self, saml_metadata, saml_doc):
         signed_xml = self._verify_saml_signature(saml_metadata, saml_doc)
 
-        if signed_xml is not None:
+        if signed_xml is None or len(signed_xml) == 0:
             self.log.warning('Failed to verify signature on SAML Response')
             return False, None
 
