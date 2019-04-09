@@ -356,8 +356,8 @@ class SAMLAuthenticator(Authenticator):
         self.log.info('The SAML Assertion matched the configured values')
         return True
 
-    def _test_valid_saml_response(self, saml_metadata, decoded_saml_doc):
-        signed_xml = self._verify_saml_signature(saml_metadata, decoded_saml_doc)
+    def _test_valid_saml_response(self, saml_metadata, saml_doc):
+        signed_xml = self._verify_saml_signature(saml_metadata, saml_doc)
 
         if not signed_xml:
             self.log.warning('Failed to verify signature on SAML Response')
