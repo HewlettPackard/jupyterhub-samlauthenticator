@@ -315,7 +315,7 @@ class TestMetadataRetrieval(object):
         with pytest.raises(IOError):
             a._get_preferred_metadata_from_source()
 
-        assert a._get_saml_metadata_etree() == None
+        assert a._get_saml_metadata_etree() is None
 
     @patch('samlauthenticator.samlauthenticator.urlopen')
     def test_urlopen_fail(self, mock_urlopen):
@@ -332,7 +332,13 @@ class TestMetadataRetrieval(object):
         with pytest.raises(IOError):
             a._get_preferred_metadata_from_source()
 
-        assert a._get_saml_metadata_etree() == None
+        assert a._get_saml_metadata_etree() is None
+
+    def test_no_metadata_configured(self):
+        a = SAMLAuthenticator()
+        assert a._get_preferred_metadata_from_source() is None
+
+        assert a._get_saml_metadata_etree() is None
 
 
 class TestSAMLDocRetrieval(object):
@@ -361,13 +367,13 @@ class TestSAMLDocRetrieval(object):
         a = SAMLAuthenticator()
         fake_data = {}
 
-        assert a._get_saml_doc_etree(fake_data) == None
+        assert a._get_saml_doc_etree(fake_data) is None
 
     def test_bad_decode(self):
         a = SAMLAuthenticator()
         fake_data = {a.login_post_field: 'this is not base 64 encoded data'}
 
-        assert a._get_saml_doc_etree(fake_data) == None
+        assert a._get_saml_doc_etree(fake_data) is None
 
     @patch('samlauthenticator.samlauthenticator.b64decode')
     def test_not_valid_xml(self, mock_b64decode):
@@ -376,7 +382,7 @@ class TestSAMLDocRetrieval(object):
 
         mock_b64decode.return_value = 'bad xml string'
 
-        assert a._get_saml_doc_etree(fake_data) == None
+        assert a._get_saml_doc_etree(fake_data) is None
 
 
 class TestValidSamlResponse(object):
