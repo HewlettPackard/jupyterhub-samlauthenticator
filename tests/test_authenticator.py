@@ -354,6 +354,22 @@ class TestValidSamlResponse(object):
         assert not response_is_valid
         assert etree.tostring(self.verified_signed_xml) == etree.tostring(signed_xml)
 
+    def test_no_not_on_or_after(self):
+        a = SAMLAuthenticator()
+
+        tampered_etree = etree.fromstring(test_constants.tampered_assertion_no_on_or_after)
+
+        assert not a._verify_physical_constraints(tampered_etree)
+        assert not a._verify_saml_response_fields(self.metadata_etree, tampered_etree)
+
+    def test_no_not_before(self):
+        a = SAMLAuthenticator()
+
+        tampered_etree = etree.fromstring(test_constants.tampered_assertion_no_not_before)
+
+        assert not a._verify_physical_constraints(tampered_etree)
+        assert not a._verify_saml_response_fields(self.metadata_etree, tampered_etree)
+
 
 
 
