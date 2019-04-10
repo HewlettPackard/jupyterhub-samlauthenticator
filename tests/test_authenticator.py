@@ -371,15 +371,29 @@ class TestValidSamlResponse(object):
         assert not a._verify_saml_response_fields(self.metadata_etree, tampered_etree)
 
 
+class TestGetUsername(object):
+    response_etree = etree.fromstring(test_constants.sample_response_xml)
+    verified_signed_xml = XMLVerifier().verify(response_etree, x509_cert=test_constants.x509_cert).signed_xml
+
+    def test_get_username_from_saml_doc(self):
+        a = SAMLAuthenticator()
+
+        assert 'Bluedata' == a._get_username_from_saml_etree(self.verified_signed_xml)
+        assert 'Bluedata' == a._get_username_from_saml_etree(self.response_etree)
+        assert 'Bluedata' == a._get_username_from_saml_doc(self.verified_signed_xml, self.response_etree)
+
+    def test_get_username_no_nameid(self):
+        tampered_assertion_etree = etree.fromstring(test_constants.tampered_assertion_no_nameid)
+        tampered_response_etree  = etree.fromstring(test_constants.tampered_response_no_nameid)
+
+        a = SAMLAuthenticator()
+
+        assert a._get_username_from_saml_etree(tampered_assertion_etree) is None
+        assert a._get_username_from_saml_etree(tampered_response_etree) is None
+        assert a._get_username_from_saml_doc(tampered_assertion_etree, tampered_response_etree) is None
+        assert 'Bluedata' == a._get_username_from_saml_doc(tampered_assertion_etree, self.response_etree)
 
 
-# class TestGetUsername(object):
-#     def test_one(self):
-#         x = "this"
-#         assert 'h' in x
-
-#     def test_two(self):
-#         assert 1 == 2
 
 # class TestAuthenticate(object):
 #     def test_one(self):
