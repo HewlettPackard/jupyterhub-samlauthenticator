@@ -394,16 +394,45 @@ class TestGetUsername(object):
         assert 'Bluedata' == a._get_username_from_saml_doc(tampered_assertion_etree, self.response_etree)
 
 
+class TestCreateUser(object):
+    @patch('samlauthenticator.samlauthenticator.pwd')
+    def test_create_existing_user(self, mock_pwd):
+        mock_pwd.getpwnam.return_value = True
+
+        a = SAMLAuthenticator()
+
+        assert a._optional_user_add('Bluedata')
+
+        mock_pwd.getpwnam.assert_called_once_with('Bluedata')
+
+    @patch('samlauthenticator.samlauthenticator.subprocess')
+    @patch('samlauthenticator.samlauthenticator.pwd')
+    def test_create_not_existing_user(self, mock_pwd, mock_subprocess):
+        mock_pwd.getpwnam.side_effect = KeyError('Bad username')
+        mock_subprocess.call.return_value = 0
+
+        a = SAMLAuthenticator()
+
+        assert a._optional_user_add('Bluedata')
+
+        mock_pwd.getpwnam.assert_called_once_with('Bluedata')
+        mock_subprocess.call.assert_called_once_with(['useradd', 'Bluedata'])
+
+    @patch('samlauthenticator.samlauthenticator.subprocess')
+    @patch('samlauthenticator.samlauthenticator.pwd')
+    def test_create_user_fails(self, mock_pwd, mock_subprocess):
+        mock_pwd.getpwnam.side_effect = KeyError('Bad username')
+        mock_subprocess.call.return_value = 1
+
+        a = SAMLAuthenticator()
+
+        assert not a._optional_user_add('Bluedata')
+
+        mock_pwd.getpwnam.assert_called_once_with('Bluedata')
+        mock_subprocess.call.assert_called_once_with(['useradd', 'Bluedata'])
+
 
 # class TestAuthenticate(object):
-#     def test_one(self):
-#         x = "this"
-#         assert 'h' in x
-
-#     def test_two(self):
-#         assert 1 == 2
-
-# class TestCreateUser(object):
 #     def test_one(self):
 #         x = "this"
 #         assert 'h' in x
