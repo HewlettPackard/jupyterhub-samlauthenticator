@@ -340,6 +340,15 @@ class TestMetadataRetrieval(object):
 
         assert a._get_saml_metadata_etree() is None
 
+    def test_malformed_metadata(self):
+        a = SAMLAuthenticator()
+        bad_xml = 'not an xml document'
+        a.metadata_content = bad_xml
+
+        assert a._get_metadata_from_config() == bad_xml
+        assert a._get_preferred_metadata_from_source() == bad_xml
+        assert a._get_saml_metadata_etree() is None
+
 
 class TestSAMLDocRetrieval(object):
     # TODO: move SAMLResponse inside this object

@@ -194,7 +194,7 @@ class SAMLAuthenticator(Authenticator):
             # There was a problem getting the SAML metadata
             self.log.warning('Got exception when attempting to read SAML metadata')
             self.log.warning('Ensure that EXACTLY ONE of metadata_filepath, ' +
-                           'metadata_content, and metadata_url is populated')
+                             'metadata_content, and metadata_url is populated')
             self._log_exception_error(e)
             return None
 
@@ -202,7 +202,7 @@ class SAMLAuthenticator(Authenticator):
             # There was a problem getting the SAML metadata
             self.log.warning('Got exception when attempting to read SAML metadata')
             self.log.warning('Ensure that EXACTLY ONE of metadata_filepath, ' +
-                           'metadata_content, and metadata_url is populated')
+                             'metadata_content, and metadata_url is populated')
             self.log.warning('SAML metadata was empty')
             return None
 
