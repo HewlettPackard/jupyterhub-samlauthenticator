@@ -247,6 +247,42 @@ class TestValidSamlResponse(object):
         assert not response_is_valid
         assert etree.tostring(signed_xml) == etree.tostring(self.verified_signed_xml)
 
+    def test_signed_xml_bad_audience(self):
+        a = SAMLAuthenticator()
+        a.audience = '''bad_audience'''
+
+        assert not a._verify_saml_response_against_configured_fields(self.verified_signed_xml)
+        assert not a._verify_saml_response_fields(self.metadata_etree, self.verified_signed_xml)
+
+        response_is_valid, signed_xml = a._test_valid_saml_response(self.metadata_etree, self.response_etree)
+        assert not response_is_valid
+        # We will get the signed xml back, but the response is not valid, so it doesn't really matter
+        assert etree.tostring(self.verified_signed_xml) == etree.tostring(signed_xml)
+
+    def test_signed_xml_no_audience(self):
+        a = SAMLAuthenticator()
+        a.audience = '''audience_should_exist'''
+
+        tampered_etree = etree.fromstring(test_constants.tampered_assertion_no_audience)
+
+        assert not a._verify_saml_response_against_configured_fields(tampered_etree)
+        assert not a._verify_saml_response_fields(self.metadata_etree, tampered_etree)
+
+    @patch('samlauthenticator.samlauthenticator.datetime')
+    def test_signed_xml_good_audience(self, mock_datetime):
+        mock_datetime.now.return_value = datetime(2019, 4, 9, 21, 35, 0, tzinfo=timezone.utc)
+        mock_datetime.strptime = datetime.strptime
+
+        a = SAMLAuthenticator()
+        a.audience = '''{audience}'''
+
+        assert a._verify_saml_response_against_configured_fields(self.verified_signed_xml)
+        assert a._verify_saml_response_fields(self.metadata_etree, self.verified_signed_xml)
+
+        response_is_valid, signed_xml = a._test_valid_saml_response(self.metadata_etree, self.response_etree)
+        assert response_is_valid
+        assert etree.tostring(self.verified_signed_xml) == etree.tostring(signed_xml)
+
 
 # class TestGetUsername(object):
 #     def test_one(self):
