@@ -440,6 +440,19 @@ class TestValidSamlResponse(object):
         assert not response_is_valid
         assert etree.tostring(signed_xml) == etree.tostring(self.verified_signed_xml)
 
+    def test_metadata_no_entity(self):
+        a = SAMLAuthenticator()
+        no_metadata_entity_etree = etree.fromstring(sample_metadata_no_entity)
+
+        assert a._verify_saml_response_against_metadata(no_metadata_entity_etree, self.verified_signed_xml) is False
+
+        assert a._verify_saml_response_fields(no_metadata_entity_etree, self.verified_signed_xml) is False
+
+        response_is_valid, signed_xml = a._test_valid_saml_response(no_metadata_entity_etree, self.response_etree)
+
+        assert not response_is_valid
+        assert etree.tostring(signed_xml) == etree.tostring(self.verified_signed_xml)
+
 # class TestGetUsername(object):
 #     def test_one(self):
 #         x = "this"
