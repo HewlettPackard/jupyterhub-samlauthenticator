@@ -371,7 +371,6 @@ class SAMLAuthenticator(Authenticator):
         return True
 
     def _verify_saml_response_fields(self, saml_metadata, signed_xml):
-        # TODO: this
         if not self._verify_saml_response_against_metadata(saml_metadata, signed_xml):
             self.log.warning('The SAML Assertion did not match the provided metadata')
             return False
