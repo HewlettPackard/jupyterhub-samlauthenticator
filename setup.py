@@ -15,7 +15,7 @@ with open('requirements.txt', 'r') as req_file, open('test_requirements.txt', 'r
     unversioned_test_reqs = [get_req_from_versioned_req(requirement) for requirement in versioned_test_reqs]
 
     setup(
-        name='distortedsignal-samlauthenticator',
+        name='jupyterhub-samlauthenticator',
         version=version,
         description='SAML Authenticator for JupyterHub',
         url='https://github.com/distortedsignal/samlauthenticator',
