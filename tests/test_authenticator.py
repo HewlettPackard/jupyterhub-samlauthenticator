@@ -453,6 +453,7 @@ class TestValidSamlResponse(object):
         assert not response_is_valid
         assert etree.tostring(signed_xml) == etree.tostring(self.verified_signed_xml)
 
+
 # class TestGetUsername(object):
 #     def test_one(self):
 #         x = "this"
