@@ -11,7 +11,7 @@ import subprocess
 # Imports to work with JupyterHub
 from jupyterhub.auth import Authenticator
 from tornado import gen
-from traitlets import Unicode, List
+from traitlets import Unicode
 
 # Imports for me
 from lxml import etree
@@ -60,25 +60,6 @@ class SAMLAuthenticator(Authenticator):
         an administrator may want a user to be identified by their email address instead
         of an LDAP DN or another string that comes in the NameID field. The namespace
         bindings when executing the XPath will be as follows:
-
-        {
-            'ds'   : 'http://www.w3.org/2000/09/xmldsig#',
-            'md'   : 'urn:oasis:names:tc:SAML:2.0:metadata',
-            'saml' : 'urn:oasis:names:tc:SAML:2.0:assertion',
-            'samlp': 'urn:oasis:names:tc:SAML:2.0:protocol'
-        }
-        '''
-    )
-    xpath_user_group_location = List(
-        default_value=[],
-        allow_none=True,
-        config=True,
-        help='''
-        This is a list of XPaths that specify where in the SAML Response the
-        Authenticator should be looking to find group information for the authenticated
-        user. This should ONLY be used if ALL users with a given group need to have
-        access to the same workspace. The namespace bindings when executing the XPaths
-        will be as follows:
 
         {
             'ds'   : 'http://www.w3.org/2000/09/xmldsig#',
@@ -395,54 +376,26 @@ class SAMLAuthenticator(Authenticator):
 
         return self._verify_saml_response_fields(saml_metadata, signed_xml), signed_xml
 
-    def _get_username_from_signed_saml_doc(self, signed_xml):
+    def _get_username_from_saml_etree(self, signed_xml):
         xpath_with_namespaces = self._make_xpath_builder()
-
-        for xpath_str in self.xpath_user_group_location:
-            xpath_fun = xpath_with_namespaces(xpath_str)
-            xpath_result = xpath_fun(signed_xml)
-            if xpath_result:
-                return xpath_result[0]
-
-        self.log.info('Did not get user location from SAML Response group XPaths')
 
         xpath_fun = xpath_with_namespaces(self.xpath_username_location)
         xpath_result = xpath_fun(signed_xml)
         if xpath_result:
             return xpath_result[0]
 
-        self.log.info('Could not find name from name XPath')
-
-        return None
-
-    def _get_username_from_decoded_saml_doc(self, decoded_saml_doc):
-        xpath_with_namespaces = self._make_xpath_builder()
-
-        for xpath_str in self.xpath_user_group_location:
-            xpath_fun = xpath_with_namespaces(xpath_str)
-            xpath_result = xpath_fun(decoded_saml_doc)
-            if xpath_result:
-                return xpath_result[0]
-
-        self.log.info('Did not get user location from SAML Response group XPaths in decoded doc')
-
-        xpath_fun = xpath_with_namespaces(self.xpath_username_location)
-        xpath_result = xpath_fun(decoded_saml_doc)
-        if xpath_result:
-            return xpath_result[0]
-
-        self.log.warning('Failed to find valid user name')
+        self.log.warning('Could not find name from name XPath')
 
         return None
 
     def _get_username_from_saml_doc(self, signed_xml, decoded_saml_doc):
-        user_name = self._get_username_from_signed_saml_doc(signed_xml)
+        user_name = self._get_username_from_saml_etree(signed_xml)
         if user_name:
             return user_name
 
         self.log.info('Did not get user name from signed SAML Response')
 
-        return self._get_username_from_decoded_saml_doc(decoded_saml_doc)
+        return self._get_username_from_saml_etree(decoded_saml_doc)
 
     def _optional_user_add(self, username):
         try:
