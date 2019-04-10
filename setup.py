@@ -9,7 +9,7 @@ with open('requirements.txt', 'r') as req_file, open('test_requirements.txt', 'r
     versioned_test_reqs = test_req_file.read().split('\n')
 
     def get_req_from_versioned_req(versioned_req):
-        return versioned_req.split('==')[0]
+        return versioned_req.split('==')[0].split('>=')[0]
 
     unversioned_reqs = [get_req_from_versioned_req(requirement) for requirement in versioned_reqs]
     unversioned_test_reqs = [get_req_from_versioned_req(requirement) for requirement in versioned_test_reqs]

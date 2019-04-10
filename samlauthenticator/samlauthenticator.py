@@ -14,8 +14,9 @@ from tornado import gen
 from traitlets import Unicode, List
 
 # Imports for me
-from signxml import XMLVerifier
 from lxml import etree
+import pytz
+from signxml import XMLVerifier
 
 class SAMLAuthenticator(Authenticator):
     metadata_filepath = Unicode(
@@ -128,6 +129,20 @@ class SAMLAuthenticator(Authenticator):
         following link:
 
         https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
+
+        '''
+    )
+    idp_timezone = Unicode(
+        default_value='UTC',
+        allow_none=True,
+        config=True,
+        help='''
+        A timezone-specific string that uniquely identifies a timezone using pytz's
+        timezone constructor. To view a list of options, import the package and
+        inspect the `pytz.all_timezones` list. It is quite long. For more information
+        on pytz, please read peruse the pip package:
+
+        https://pypi.org/project/pytz/
 
         '''
     )
@@ -307,6 +322,10 @@ class SAMLAuthenticator(Authenticator):
 
         return True
 
+    def _is_date_aware(self, created_datetime):
+        return created_datetime.tzinfo is not None and \
+            created_datetime.tzinfo.utcoffset(created_datetime) is not None
+
     def _verify_physical_constraints(self, signed_xml):
         xpath_with_namespaces = self._make_xpath_builder()
 
@@ -320,8 +339,18 @@ class SAMLAuthenticator(Authenticator):
 
             not_before_datetime = datetime.strptime(not_before_list[0], self.time_format_string)
             not_on_or_after_datetime = datetime.strptime(not_on_or_after_list[0], self.time_format_string)
-            not_before_datetime = not_before_datetime.replace(tzinfo=timezone.utc)
-            not_on_or_after_datetime = not_on_or_after_datetime.replace(tzinfo=timezone.utc)
+
+            timezone_obj = None
+
+            if not self._is_date_aware(not_before_datetime):
+                timezone_obj = pytz.timezone(self.idp_timezone)
+                not_before_datetime = timezone_obj.localize(not_before_datetime)
+
+            if not self._is_date_aware(not_on_or_after_datetime):
+                if not timezone_obj:
+                    timezone_obj = pytz.timezone(self.idp_timezone)
+                not_on_or_after_datetime = timezone_obj.localize(not_on_or_after_datetime)
+
             now = datetime.now(timezone.utc)
 
             if now < not_before_datetime or now >= not_on_or_after_datetime:
