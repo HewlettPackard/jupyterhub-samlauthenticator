@@ -407,17 +407,16 @@ class SAMLAuthenticator(Authenticator):
             # say something like "if adding the user is successful, return username"
             return not subprocess.call(['useradd', username])
 
-    @gen.coroutine
-    def authenticate(self, handler, data):
+    def _authenticate(self, handler, data):
         saml_doc_etree = self._get_saml_doc_etree(data)
-        
-        if not saml_doc_etree:
+
+        if saml_doc_etree is None or len(saml_doc_etree) == 0:
             self.log.error('Error getting decoded SAML Response')
             return None
 
         saml_metadata_etree = self._get_saml_metadata_etree()
 
-        if not saml_metadata_etree:
+        if saml_metadata_etree is None or len(saml_metadata_etree) == 0:
             self.log.error('Error getting SAML Metadata')
             return None
 
@@ -435,3 +434,7 @@ class SAMLAuthenticator(Authenticator):
 
         self.log.error('Error validating SAML response')
         return None
+
+    @gen.coroutine
+    def authenticate(self, handler, data):
+        return self._authenticate(handler, data)
