@@ -308,7 +308,7 @@ class SAMLAuthenticator(Authenticator):
                 return False
 
         if self.recipient:
-            find_recipient = xpath_with_namespaces('//saml:SubjectConfirmationData@Recipient')
+            find_recipient = xpath_with_namespaces('//saml:SubjectConfirmationData/@Recipient')
             recipient_list = find_recipient(signed_xml)
             if recipient_list:
                 if self.recipient != recipient_list[0]:
