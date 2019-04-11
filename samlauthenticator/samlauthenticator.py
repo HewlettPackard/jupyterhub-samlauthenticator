@@ -438,3 +438,6 @@ class SAMLAuthenticator(Authenticator):
     @gen.coroutine
     def authenticate(self, handler, data):
         return self._authenticate(handler, data)
+
+    def normalize_username(self, username):
+        return username
