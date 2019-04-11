@@ -86,10 +86,42 @@ c.SAMLAuthenticator.idp_timezone = 'US/Eastern'
 
 ## Developing and Contributing
 
-TODO
+Get the code and create a virtual environment.
 
+```sh
+git clone {git@git-source}
+cd samlauthenticator
+virtualenv --python=python3.6 venv
+```
 
+Start the virtual environment and install dependencies
 
+```sh
+source venv/bin/activate
+pip install -r requirements.txt
+pip install -r test_requirements.txt
+```
 
+Make sure that unit tests run on your system and complete successfully.
 
+```sh
+pytest --cov=samlauthenticator --cov-report term-missing
+```
+The output should be something like this:
+```
+============================= test session starts ==============================
+collected 45 items
 
+tests/test_authenticator.py ............................................ [ 97%]
+.                                                                        [100%]
+
+Name                                     Stmts   Miss  Cover   Missing
+----------------------------------------------------------------------
+samlauthenticator/__init__.py                1      0   100%
+samlauthenticator/samlauthenticator.py     241      2    99%   332, 440
+----------------------------------------------------------------------
+TOTAL                                      242      2    99%
+========================== 45 passed in 1.00 seconds ===========================
+```
+
+Make your change, write your unit tests, then send a pull request.
