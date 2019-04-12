@@ -425,10 +425,10 @@ class SAMLAuthenticator(Authenticator):
 
         if valid_saml_response:
             self.log.debug('Authenticated user using SAML')
-            Un = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
-            self.log.debug('Optionally create and return user: ' + Un)
-            if self._optional_user_add(Un):
-                return Un
+            username = self.normalize_username(self._get_username_from_saml_doc(signed_xml, saml_doc_etree))
+            self.log.debug('Optionally create and return user: ' + username)
+            if self._optional_user_add(username):
+                return username
             else:
                 self.log.error('Failed to add user')
                 return None
@@ -439,9 +439,6 @@ class SAMLAuthenticator(Authenticator):
     @gen.coroutine
     def authenticate(self, handler, data):
         return self._authenticate(handler, data)
-
-    def normalize_username(self, username):
-        return username
 
     def get_handlers(authenticator_self, app):
 
@@ -461,7 +458,7 @@ class SAMLAuthenticator(Authenticator):
 
             redirect_link_getter = xpath_with_namespaces(final_xpath)
 
-            login_handler_self.redirect(redirect_link_getter(saml_metadata_etree)[0], permanent=True)
+            handler_self.redirect(redirect_link_getter(saml_metadata_etree)[0], permanent=True)
 
 
         class SAMLLoginHandler(LoginHandler):
