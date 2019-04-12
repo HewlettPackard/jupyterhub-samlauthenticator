@@ -10,7 +10,8 @@ import subprocess
 
 # Imports to work with JupyterHub
 from jupyterhub.auth import Authenticator
-from tornado import gen
+from jupyterhub.handlers.login import LoginHandler, LogoutHandler
+from tornado import gen, web
 from traitlets import Unicode
 
 # Imports for me
@@ -441,3 +442,41 @@ class SAMLAuthenticator(Authenticator):
 
     def normalize_username(self, username):
         return username
+
+    def get_handlers(authenticator_self, app):
+
+        # This is maybe too cute by half, but I want to run with it.
+        def get_redirect_from_metadata_and_redirect(element_name, handler_self):
+            saml_metadata_etree = authenticator_self._get_saml_metadata_etree()
+
+            if saml_metadata_etree is None or len(saml_metadata_etree) == 0:
+                authenticator_self.log.error('Error getting SAML Metadata')
+                raise web.HTTPError(500)
+
+            xpath_with_namespaces = authenticator_self._make_xpath_builder()
+
+            binding = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'
+            final_xpath = '//' + element_name + '[@Binding=\'' + binding + '\']/@Location'
+            authenticator_self.log.debug('Final xpath is: ' + final_xpath)
+
+            redirect_link_getter = xpath_with_namespaces(final_xpath)
+
+            login_handler_self.redirect(redirect_link_getter(saml_metadata_etree)[0], permanent=True)
+
+
+        class SAMLLoginHandler(LoginHandler):
+
+            async def get(login_handler_self):
+                authenticator_self.log.debug('Starting SP-initiated SAML Login')
+                get_redirect_from_metadata_and_redirect('md:SingleSignOnService', login_handler_self)
+
+        class SAMLLogoutHandler(LogoutHandler):
+
+            async def get(logout_handler_self):
+                authenticator_self.log.debug('Forwarding during SAML Logout')
+                get_redirect_from_metadata_and_redirect('md:SingleLogoutService', logout_handler_self)
+
+        return [('/login', SAMLLoginHandler),
+                ('/hub/login', SAMLLoginHandler),
+                ('/logout', SAMLLogoutHandler),
+                ('/hub/logout', SAMLLogoutHandler)]
