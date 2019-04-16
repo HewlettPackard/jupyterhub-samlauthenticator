@@ -408,6 +408,14 @@ class SAMLAuthenticator(Authenticator):
             # say something like "if adding the user is successful, return username"
             return not subprocess.call(['useradd', username])
 
+    def _check_username_and_add_user(self, username):
+        if self.validate_username(username) and \
+                self.check_blacklist(username) and \
+                self.check_whitelist(username):
+            return self._optional_user_add(username)
+
+        return False
+
     def _authenticate(self, handler, data):
         saml_doc_etree = self._get_saml_doc_etree(data)
 
@@ -425,13 +433,15 @@ class SAMLAuthenticator(Authenticator):
 
         if valid_saml_response:
             self.log.debug('Authenticated user using SAML')
-            username = self.normalize_username(self._get_username_from_saml_doc(signed_xml, saml_doc_etree))
+            username = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
+            username = self.normalize_username(username)
             self.log.debug('Optionally create and return user: ' + username)
-            if self._optional_user_add(username):
+            username_add_result = self._check_username_and_add_user(username)
+            if username_add_result:
                 return username
-            else:
-                self.log.error('Failed to add user')
-                return None
+
+            self.log.error('Failed to add user')
+            return None
 
         self.log.error('Error validating SAML response')
         return None
@@ -454,7 +464,7 @@ class SAMLAuthenticator(Authenticator):
 
             binding = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'
             final_xpath = '//' + element_name + '[@Binding=\'' + binding + '\']/@Location'
-            authenticator_self.log.debug('Final xpath is: ' + final_xpath)
+            handler_self.log.info('Final xpath is: ' + final_xpath)
 
             redirect_link_getter = xpath_with_namespaces(final_xpath)
 
@@ -464,13 +474,22 @@ class SAMLAuthenticator(Authenticator):
         class SAMLLoginHandler(LoginHandler):
 
             async def get(login_handler_self):
-                authenticator_self.log.debug('Starting SP-initiated SAML Login')
+                login_handler_self.log.info('Starting SP-initiated SAML Login')
                 get_redirect_from_metadata_and_redirect('md:SingleSignOnService', login_handler_self)
 
         class SAMLLogoutHandler(LogoutHandler):
 
             async def get(logout_handler_self):
-                authenticator_self.log.debug('Forwarding during SAML Logout')
+                logout_handler_self.log.info('Current user: ' + str(logout_handler_self.current_user))
+                if logout_handler_self.current_user:
+                    logout_handler_self.clear_login_cookie()
+
+                    login_state = yield logout_handler_self.get_auth_state()
+                    if login_state:
+                        login_state['tokens'] = ''
+                        logout_handler_self.current_user.save_auth_state(login_state)
+
+                logout_handler_self.log.debug('Forwarding during SAML Logout')
                 get_redirect_from_metadata_and_redirect('md:SingleLogoutService', logout_handler_self)
 
         return [('/login', SAMLLoginHandler),

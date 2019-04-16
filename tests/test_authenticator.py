@@ -415,7 +415,6 @@ class TestCreateUser(object):
 
         assert a._optional_user_add('Bluedata')
 
-        mock_pwd.getpwnam.assert_called_once_with('Bluedata')
         mock_subprocess.call.assert_called_once_with(['useradd', 'Bluedata'])
 
     @patch('samlauthenticator.samlauthenticator.subprocess')
@@ -433,117 +432,65 @@ class TestCreateUser(object):
 
 
 class TestAuthenticate(object):
+    def _confirm_tom(self, saml_data, mock_datetime, mock_pwd):
+        mock_datetime.now.return_value = saml_data.datetime_stamp
+        mock_datetime.strptime = datetime.strptime
+        mock_pwd.getpwnam.return_value = True
+
+        a = SAMLAuthenticator()
+        a.metadata_content = saml_data.metadata_xml
+
+        assert 'tom' == a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response})
+        mock_datetime.now.assert_called_once_with(timezone.utc)
+        mock_pwd.getpwnam.assert_called_once_with('tom')
+
     def test_low_strength_cert_sha_1_fingerprint(self):
         saml_data = test_constants.metadata_encoded_xml_dict['low_strength_cert']['SHA-1']
         with patch('samlauthenticator.samlauthenticator.datetime') as mock_datetime, \
                 patch('samlauthenticator.samlauthenticator.pwd') as mock_pwd:
-            mock_datetime.now.return_value = saml_data.datetime_stamp
-            mock_datetime.strptime = datetime.strptime
-            mock_pwd.getpwnam.return_value = True
-
-            a = SAMLAuthenticator()
-            a.metadata_content = saml_data.metadata_xml
-            assert 'Tom' == a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response})
-            mock_datetime.now.assert_called_once_with(timezone.utc)
-            mock_pwd.getpwnam.assert_called_once_with('Tom')
+            self._confirm_tom(saml_data, mock_datetime, mock_pwd)
 
     def test_low_strength_cert_sha_256_fingerprint(self):
         saml_data = test_constants.metadata_encoded_xml_dict['low_strength_cert']['SHA-256']
         with patch('samlauthenticator.samlauthenticator.datetime') as mock_datetime, \
                 patch('samlauthenticator.samlauthenticator.pwd') as mock_pwd:
-            mock_datetime.now.return_value = saml_data.datetime_stamp
-            mock_datetime.strptime = datetime.strptime
-            mock_pwd.getpwnam.return_value = True
-
-            a = SAMLAuthenticator()
-            a.metadata_content = saml_data.metadata_xml
-            assert 'Tom' == a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response})
-            mock_datetime.now.assert_called_once_with(timezone.utc)
-            mock_pwd.getpwnam.assert_called_once_with('Tom')
+            self._confirm_tom(saml_data, mock_datetime, mock_pwd)
 
     def test_low_strength_cert_sha_384_fingerprint(self):
         saml_data = test_constants.metadata_encoded_xml_dict['low_strength_cert']['SHA-384']
         with patch('samlauthenticator.samlauthenticator.datetime') as mock_datetime, \
                 patch('samlauthenticator.samlauthenticator.pwd') as mock_pwd:
-            mock_datetime.now.return_value = saml_data.datetime_stamp
-            mock_datetime.strptime = datetime.strptime
-            mock_pwd.getpwnam.return_value = True
-
-            a = SAMLAuthenticator()
-            a.metadata_content = saml_data.metadata_xml
-            assert 'Tom' == a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response})
-            mock_datetime.now.assert_called_once_with(timezone.utc)
-            mock_pwd.getpwnam.assert_called_once_with('Tom')
+            self._confirm_tom(saml_data, mock_datetime, mock_pwd)
 
     def test_low_strength_cert_sha_512_fingerprint(self):
         saml_data = test_constants.metadata_encoded_xml_dict['low_strength_cert']['SHA-512']
         with patch('samlauthenticator.samlauthenticator.datetime') as mock_datetime, \
                 patch('samlauthenticator.samlauthenticator.pwd') as mock_pwd:
-            mock_datetime.now.return_value = saml_data.datetime_stamp
-            mock_datetime.strptime = datetime.strptime
-            mock_pwd.getpwnam.return_value = True
-
-            a = SAMLAuthenticator()
-            a.metadata_content = saml_data.metadata_xml
-            assert 'Tom' == a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response})
-            mock_datetime.now.assert_called_once_with(timezone.utc)
-            mock_pwd.getpwnam.assert_called_once_with('Tom')
+            self._confirm_tom(saml_data, mock_datetime, mock_pwd)
 
     def test_standard_strength_cert_sha_1_fingerprint(self):
         saml_data = test_constants.metadata_encoded_xml_dict['standard_strength_cert']['SHA-1']
         with patch('samlauthenticator.samlauthenticator.datetime') as mock_datetime, \
                 patch('samlauthenticator.samlauthenticator.pwd') as mock_pwd:
-            mock_datetime.now.return_value = saml_data.datetime_stamp
-            mock_datetime.strptime = datetime.strptime
-            mock_pwd.getpwnam.return_value = True
-
-            a = SAMLAuthenticator()
-            a.metadata_content = saml_data.metadata_xml
-            assert 'Tom' == a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response})
-            mock_datetime.now.assert_called_once_with(timezone.utc)
-            mock_pwd.getpwnam.assert_called_once_with('Tom')
+            self._confirm_tom(saml_data, mock_datetime, mock_pwd)
 
     def test_standard_strength_cert_sha_256_fingerprint(self):
         saml_data = test_constants.metadata_encoded_xml_dict['standard_strength_cert']['SHA-256']
         with patch('samlauthenticator.samlauthenticator.datetime') as mock_datetime, \
                 patch('samlauthenticator.samlauthenticator.pwd') as mock_pwd:
-            mock_datetime.now.return_value = saml_data.datetime_stamp
-            mock_datetime.strptime = datetime.strptime
-            mock_pwd.getpwnam.return_value = True
-
-            a = SAMLAuthenticator()
-            a.metadata_content = saml_data.metadata_xml
-            assert 'Tom' == a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response})
-            mock_datetime.now.assert_called_once_with(timezone.utc)
-            mock_pwd.getpwnam.assert_called_once_with('Tom')
+            self._confirm_tom(saml_data, mock_datetime, mock_pwd)
 
     def test_standard_strength_cert_sha_384_fingerprint(self):
         saml_data = test_constants.metadata_encoded_xml_dict['standard_strength_cert']['SHA-384']
         with patch('samlauthenticator.samlauthenticator.datetime') as mock_datetime, \
                 patch('samlauthenticator.samlauthenticator.pwd') as mock_pwd:
-            mock_datetime.now.return_value = saml_data.datetime_stamp
-            mock_datetime.strptime = datetime.strptime
-            mock_pwd.getpwnam.return_value = True
-
-            a = SAMLAuthenticator()
-            a.metadata_content = saml_data.metadata_xml
-            assert 'Tom' == a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response})
-            mock_datetime.now.assert_called_once_with(timezone.utc)
-            mock_pwd.getpwnam.assert_called_once_with('Tom')
+            self._confirm_tom(saml_data, mock_datetime, mock_pwd)
 
     def test_standard_strength_cert_sha_512_fingerprint(self):
         saml_data = test_constants.metadata_encoded_xml_dict['standard_strength_cert']['SHA-512']
         with patch('samlauthenticator.samlauthenticator.datetime') as mock_datetime, \
                 patch('samlauthenticator.samlauthenticator.pwd') as mock_pwd:
-            mock_datetime.now.return_value = saml_data.datetime_stamp
-            mock_datetime.strptime = datetime.strptime
-            mock_pwd.getpwnam.return_value = True
-
-            a = SAMLAuthenticator()
-            a.metadata_content = saml_data.metadata_xml
-            assert 'Tom' == a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response})
-            mock_datetime.now.assert_called_once_with(timezone.utc)
-            mock_pwd.getpwnam.assert_called_once_with('Tom')
+            self._confirm_tom(saml_data, mock_datetime, mock_pwd)
 
     def test_bad_post_data(self):
         a = SAMLAuthenticator()
@@ -571,7 +518,7 @@ class TestAuthenticate(object):
             a = SAMLAuthenticator()
             a.metadata_content = test_constants.sample_metadata_xml
             assert a._authenticate(None, {a.login_post_field: test_constants.b64encoded_response_xml}) is None
-            mock_pwd.getpwnam.assert_called_once_with('Bluedata')
+            mock_pwd.getpwnam.assert_called_once_with('bluedata')
             mock_datetime.now.assert_called_once_with(timezone.utc)
-            mock_subprocess.call.assert_called_once_with(['useradd', 'Bluedata'])
+            mock_subprocess.call.assert_called_once_with(['useradd', 'bluedata'])
 
