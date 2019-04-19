@@ -145,4 +145,18 @@ TOTAL                                      242      2    99%
 ========================== 45 passed in 1.00 seconds ===========================
 ```
 
-Make your change, write your unit tests, then send a pull request.
+Make your change, write your unit tests, then send a pull request. The Pull Request text must contain the following text:
+
+```
+I, [Legal Name], do hereby assert that the attached program text is my original creation, or that I am acting on behalf of the original creator.
+
+I, [Legal Name], assert that I am legally permitted to grant copyright on the attached program text.
+
+I, [Legal Name], provide this program text without warranty, expectation of support, fitness for a particualr purpose, or merchantability.
+
+I, [Legal Name], hereby grant all copyright associated with the attached program text to Hewlett Packard Enterprise LP.
+
+
+```
+
+Where `[Legal Name]` is replaced with the contributor's Legal Name.
