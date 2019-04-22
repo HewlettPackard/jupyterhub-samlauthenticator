@@ -500,16 +500,8 @@ class SAMLAuthenticator(Authenticator):
         class SAMLLogoutHandler(LogoutHandler):
 
             async def get(logout_handler_self):
-                logout_handler_self.log.info('Current user: ' + str(logout_handler_self.current_user))
-                if logout_handler_self.current_user:
-                    logout_handler_self.clear_login_cookie()
-
-                    login_state = yield logout_handler_self.get_auth_state()
-                    if login_state:
-                        login_state['tokens'] = ''
-                        logout_handler_self.current_user.save_auth_state(login_state)
-
                 logout_handler_self.log.debug('Forwarding during SAML Logout')
+                logout_handler_self.clear_login_cookie()
                 get_redirect_from_metadata_and_redirect('md:SingleLogoutService', logout_handler_self)
 
         return [('/login', SAMLLoginHandler),
