@@ -564,7 +564,8 @@ class SAMLAuthenticator(Authenticator):
                     logout_handler_self.log.debug('Shutting down servers during SAML Logout')
                     await logout_handler_self._shutdown_servers_and_backend_cleanup()
 
-                logout_handler_self._backend_logout_cleanup(logout_handler_self.current_user.name)
+                if logout_handler_self.current_user:
+                    logout_handler_self._backend_logout_cleanup(logout_handler_self.current_user.name)
 
                 if authenticator_self.idp_deauth_on_logout:
                     get_redirect_from_metadata_and_redirect('md:SingleLogoutService', logout_handler_self)
