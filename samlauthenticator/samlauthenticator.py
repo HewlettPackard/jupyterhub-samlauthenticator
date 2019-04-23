@@ -34,7 +34,7 @@ from jupyterhub.auth import Authenticator
 from jupyterhub.utils import maybe_future
 from jupyterhub.handlers.login import LoginHandler, LogoutHandler
 from tornado import gen, web
-from traitlets import Unicode
+from traitlets import Unicode, Bool
 
 # Imports for me
 from lxml import etree
@@ -148,6 +148,35 @@ class SAMLAuthenticator(Authenticator):
 
         https://pypi.org/project/pytz/
 
+        '''
+    )
+    shutdown_on_logout = Bool(
+        default_value=False,
+        allow_none=False,
+        config=True,
+        help='''
+        If you would like to shutdown user servers on logout, you can enable this
+        behavior with:
+
+        c.SAMLAuthenticator.shutdown_on_logout = True
+
+        Be careful with this setting because logging out one browser does not mean
+        the user is no longer actively using their server from another machine.
+
+        It is a little odd to have this property on the Authenticator object, but
+        (for internal-detail-reasons) since we need to hand-craft the LogoutHandler
+        class, this should be on the Authenticator.
+        '''
+    )
+    idp_deauth_on_logout = Bool(
+        default_value=True,
+        allow_none=False,
+        config=True,
+        help='''
+        If you would like to prevent logging out of the JupyterHub from killing all
+        sessions with the IdP, you can enable this behavior with:
+
+        c.SAMLAuthenticator.idp_deauth_on_logout = False
         '''
     )
 
@@ -534,9 +563,15 @@ class SAMLAuthenticator(Authenticator):
 
 
             async def get(logout_handler_self):
-                logout_handler_self.log.debug('Forwarding during SAML Logout')
-                await logout_handler_self._shutdown_spawners_and_backend_cleanup()
-                get_redirect_from_metadata_and_redirect('md:SingleLogoutService', logout_handler_self)
+                if authenticator_self.shutdown_on_logout:
+                    logout_handler_self.log.debug('Shutting down servers during SAML Logout')
+                    await logout_handler_self._shutdown_spawners_and_backend_cleanup()
+
+                if authenticator_self.idp_deauth_on_logout:
+                    get_redirect_from_metadata_and_redirect('md:SingleLogoutService', logout_handler_self)
+                else:
+                    html = logout_handler_self.render_template('logout.html')
+                    logout_handler_self.finish(html)
 
         return [('/login', SAMLLoginHandler),
                 ('/hub/login', SAMLLoginHandler),
