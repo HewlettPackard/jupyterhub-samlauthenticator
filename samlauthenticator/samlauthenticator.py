@@ -554,7 +554,7 @@ class SAMLAuthenticator(Authenticator):
                 self.clear_login_cookie()
                 self.statsd.incr('logout')
 
-            async def _shutdown_spawners_and_backend_cleanup(self):
+            async def _shutdown_servers_and_backend_cleanup(self):
                 user = self.current_user
                 if user:
                     await self._shutdown_servers(user)
@@ -565,7 +565,7 @@ class SAMLAuthenticator(Authenticator):
             async def get(logout_handler_self):
                 if authenticator_self.shutdown_on_logout:
                     logout_handler_self.log.debug('Shutting down servers during SAML Logout')
-                    await logout_handler_self._shutdown_spawners_and_backend_cleanup()
+                    await logout_handler_self._shutdown_servers_and_backend_cleanup()
 
                 if authenticator_self.idp_deauth_on_logout:
                     get_redirect_from_metadata_and_redirect('md:SingleLogoutService', logout_handler_self)
