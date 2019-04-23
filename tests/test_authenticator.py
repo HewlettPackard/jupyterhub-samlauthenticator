@@ -415,8 +415,9 @@ class TestGetUsername(object):
 
 
 class TestCreateUser(object):
+    @patch('samlauthenticator.samlauthenticator.subprocess')
     @patch('samlauthenticator.samlauthenticator.pwd')
-    def test_create_existing_user(self, mock_pwd):
+    def test_create_existing_user(self, mock_pwd, mock_subprocess):
         mock_pwd.getpwnam.return_value = True
 
         a = SAMLAuthenticator()
@@ -424,6 +425,7 @@ class TestCreateUser(object):
         assert a._optional_user_add('Bluedata')
 
         mock_pwd.getpwnam.assert_called_once_with('Bluedata')
+        mock_subprocess.call.assert_not_called()
 
     @patch('samlauthenticator.samlauthenticator.subprocess')
     @patch('samlauthenticator.samlauthenticator.pwd')
@@ -435,6 +437,7 @@ class TestCreateUser(object):
 
         assert a._optional_user_add('Bluedata')
 
+        mock_pwd.getpwnam.assert_called_once_with('Bluedata')
         mock_subprocess.call.assert_called_once_with(['useradd', 'Bluedata'])
 
     @patch('samlauthenticator.samlauthenticator.subprocess')
@@ -449,6 +452,47 @@ class TestCreateUser(object):
 
         mock_pwd.getpwnam.assert_called_once_with('Bluedata')
         mock_subprocess.call.assert_called_once_with(['useradd', 'Bluedata'])
+
+    def test_check_username_valid_username_no_black_lists(self):
+        a = SAMLAuthenticator()
+        a._optional_user_add = MagicMock()
+        a._optional_user_add.return_value = True
+        a.whitelist = {'bluedata'}
+
+        assert a._check_username_and_add_user('bluedata')
+
+        a._optional_user_add.assert_called_once_with('bluedata')
+
+        a.whitelist = {'not_bluedata'}
+        a._optional_user_add.reset_mock()
+
+        assert not a._check_username_and_add_user('bluedata')
+
+        a._optional_user_add.assert_not_called()
+
+    def test_check_username_valid_username_no_white_lists(self):
+        a = SAMLAuthenticator()
+        a._optional_user_add = MagicMock()
+        a._optional_user_add.return_value = True
+        a.blacklist = {'bluedata'}
+
+        assert not a._check_username_and_add_user('bluedata')
+
+        a._optional_user_add.assert_not_called()
+
+        a.blacklist = {'not_bluedata'}
+
+        assert a._check_username_and_add_user('bluedata')
+
+        a._optional_user_add.assert_called_once_with('bluedata')
+
+    def test_check_username_invalid_username(self):
+        a = SAMLAuthenticator()
+        a._optional_user_add = MagicMock()
+
+        assert not a._check_username_and_add_user('bluedata/')
+
+        a._optional_user_add.assert_not_called()
 
 
 class TestAuthenticate(object):

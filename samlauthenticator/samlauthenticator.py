@@ -25,11 +25,13 @@ from base64 import b64decode
 from datetime import datetime, timezone
 from urllib.request import urlopen
 
+import asyncio
 import pwd
 import subprocess
 
 # Imports to work with JupyterHub
 from jupyterhub.auth import Authenticator
+from jupyterhub.utils import maybe_future
 from jupyterhub.handlers.login import LoginHandler, LogoutHandler
 from tornado import gen, web
 from traitlets import Unicode
@@ -476,19 +478,25 @@ class SAMLAuthenticator(Authenticator):
         def get_redirect_from_metadata_and_redirect(element_name, handler_self):
             saml_metadata_etree = authenticator_self._get_saml_metadata_etree()
 
+            handler_self.log.debug('Got metadata etree')
+
             if saml_metadata_etree is None or len(saml_metadata_etree) == 0:
-                authenticator_self.log.error('Error getting SAML Metadata')
+                handler_self.log.error('Error getting SAML Metadata')
                 raise web.HTTPError(500)
+
+            handler_self.log.debug('Got valid metadata etree')
 
             xpath_with_namespaces = authenticator_self._make_xpath_builder()
 
             binding = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'
             final_xpath = '//' + element_name + '[@Binding=\'' + binding + '\']/@Location'
-            handler_self.log.info('Final xpath is: ' + final_xpath)
+            handler_self.log.debug('Final xpath is: ' + final_xpath)
 
             redirect_link_getter = xpath_with_namespaces(final_xpath)
 
-            handler_self.redirect(redirect_link_getter(saml_metadata_etree)[0], permanent=True)
+            # Here permanent MUST BE False - otherwise the /hub/logout GET will not be fired
+            # by the user's browser.
+            handler_self.redirect(redirect_link_getter(saml_metadata_etree)[0], permanent=False)
 
 
         class SAMLLoginHandler(LoginHandler):
@@ -499,9 +507,35 @@ class SAMLAuthenticator(Authenticator):
 
         class SAMLLogoutHandler(LogoutHandler):
 
+            async def _shutdown_servers(self, user):
+                active_servers = [
+                    name
+                    for (name, spawner) in user.spawners.items()
+                    if spawner.active and not spawner.pending
+                ]
+                if active_servers:
+                    self.log.debug("Shutting down %s's servers", user.name)
+                    futures = []
+                    for server_name in active_servers:
+                        futures.append(maybe_future(self.stop_single_user(user, server_name)))
+                    await asyncio.gather(*futures)
+
+            def _backend_logout_cleanup(self, name):
+                self.log.info("User logged out: %s", name)
+                self.clear_login_cookie()
+                self.statsd.incr('logout')
+
+            async def _shutdown_spawners_and_backend_cleanup(self):
+                user = self.current_user
+                if user:
+                    await self._shutdown_servers(user)
+
+                    self._backend_logout_cleanup(user.name)
+
+
             async def get(logout_handler_self):
                 logout_handler_self.log.debug('Forwarding during SAML Logout')
-                logout_handler_self.clear_login_cookie()
+                await logout_handler_self._shutdown_spawners_and_backend_cleanup()
                 get_redirect_from_metadata_and_redirect('md:SingleLogoutService', logout_handler_self)
 
         return [('/login', SAMLLoginHandler),
