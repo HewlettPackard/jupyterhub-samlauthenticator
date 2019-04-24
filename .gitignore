@@ -4,3 +4,6 @@ venv/
 # Compiled files
 *.py[cod]
 *.coverage
+*.egg-info/
+build/
+dist/
