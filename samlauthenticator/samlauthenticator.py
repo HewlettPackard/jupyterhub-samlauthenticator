@@ -168,15 +168,15 @@ class SAMLAuthenticator(Authenticator):
         class, this should be on the Authenticator.
         '''
     )
-    idp_deauth_on_logout = Bool(
+    slo_forwad_on_logout = Bool(
         default_value=True,
         allow_none=False,
         config=True,
         help='''
-        If you would like to prevent logging out of the JupyterHub from killing all
-        sessions with the IdP, you can enable this behavior with:
+        To prevent forwarding users to the SLO URI on logout,
+        set this parameter to False like so:
 
-        c.SAMLAuthenticator.idp_deauth_on_logout = False
+        c.SAMLAuthenticator.slo_forwad_on_logout = False
         '''
     )
 
@@ -567,7 +567,7 @@ class SAMLAuthenticator(Authenticator):
                 if logout_handler_self.current_user:
                     logout_handler_self._backend_logout_cleanup(logout_handler_self.current_user.name)
 
-                if authenticator_self.idp_deauth_on_logout:
+                if authenticator_self.slo_forwad_on_logout:
                     get_redirect_from_metadata_and_redirect('md:SingleLogoutService', logout_handler_self)
                 else:
                     html = logout_handler_self.render_template('logout.html')

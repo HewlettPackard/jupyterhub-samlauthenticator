@@ -68,6 +68,12 @@ By default, the SAMLAuthenticator expects the `NotOnOrAfter` and `NotBefore` fie
 
 If the timezone being passed in by the `NotOnOrAfter` and `NotBefore` fields cannot be read by `strptime()`, don't fear! So long as the timezone that the IdP resides in is known, it's possible to set the IdP's timezone. Set the `idp_timezone` field to a string that uniquely designates a timezone that can be looked up by [`pytz`](https://pypi.org/project/pytz/), and login should be able to continue.
 
+The following two configurations are _usually_ on logout handlers, but because SAML is a special login method, we put these on the Authenticator.
+
+If the user's servers should be shut down when they logout, set `shutdown_on_logout` to `True`. This stops all servers that the user was running as part of their session. It is a somewhat dangerous to set this option to `True` because a user may not be done with computations that they are running on those servers.
+
+The SAMLAuthenticator _usually_ attempts to forward users to the SLO URI set in the SAML Metadata. If this is not the desired behavior for whatever reason, set `slo_forward_on_logout` to `False`. This will change the page the user is forwarded to on logout from the page specified in the xml metadata to the standard jupyterhub logout page.
+
 #### Example Configurations
 
 ```py
@@ -103,6 +109,12 @@ c.SAMLAuthenticator.time_format_string = '%a %B %d, %Y %H:%M%S'
 
 # Looks like we can't get the timezone from the previous string - we need to set it
 c.SAMLAuthenticator.idp_timezone = 'US/Eastern'
+
+# Shutdown all servers when the user logs out
+c.SAMLAuthenticator.shutdown_on_logout = True
+
+# Don't send the user to the SLO address on logout
+c.SAMLAuthenticator.slo_forwad_on_logout = False
 ```
 
 ## Developing and Contributing
