@@ -50,5 +50,10 @@ with open('requirements.txt', 'r') as req_file, \
         license='MIT',
         packages=['samlauthenticator'],
         install_requires=unversioned_reqs,
+        classifiers=[
+            "Programming Language :: Python :: 3",
+            "License :: OSI Approved :: MIT License",
+            "Operating System :: OS Independent",
+        ],
         extras_require={"tests": unversioned_test_reqs}
     )
