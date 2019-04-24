@@ -22,9 +22,11 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 from setuptools import setup
 
-version = '0.0.1'
+version = '0.0.2'
 
-with open('requirements.txt', 'r') as req_file, open('test_requirements.txt', 'r') as test_req_file:
+with open('requirements.txt', 'r') as req_file, \
+        open('test_requirements.txt', 'r') as test_req_file, \
+        open('README.md') as readme_file:
     versioned_reqs = req_file.read().split('\n')
     versioned_test_reqs = test_req_file.read().split('\n')
 
@@ -34,10 +36,14 @@ with open('requirements.txt', 'r') as req_file, open('test_requirements.txt', 'r
     unversioned_reqs = [get_req_from_versioned_req(requirement) for requirement in versioned_reqs]
     unversioned_test_reqs = [get_req_from_versioned_req(requirement) for requirement in versioned_test_reqs]
 
+    readme_text = readme_file.read()
+
     setup(
         name='jupyterhub-samlauthenticator',
         version=version,
         description='SAML Authenticator for JupyterHub',
+        long_description=readme_text,
+        long_description_content_type="text/markdown",
         url='https://github.com/distortedsignal/samlauthenticator',
         author='Tom Kelley',
         author_email='distortedsignal@gmail.com',
