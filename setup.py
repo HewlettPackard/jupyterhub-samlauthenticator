@@ -22,19 +22,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 from setuptools import setup
 
-version = '0.0.2.5'
+version = '0.0.2.6'
 
 with open('requirements.txt', 'r') as req_file, \
         open('test_requirements.txt', 'r') as test_req_file, \
         open('README.md') as readme_file:
     versioned_reqs = req_file.read().split('\n')
     versioned_test_reqs = test_req_file.read().split('\n')
-
-    def get_req_from_versioned_req(versioned_req):
-        return versioned_req.split('==')[0].split('>=')[0]
-
-    unversioned_reqs = [get_req_from_versioned_req(requirement) for requirement in versioned_reqs]
-    unversioned_test_reqs = [get_req_from_versioned_req(requirement) for requirement in versioned_test_reqs]
 
     readme_text = readme_file.read()
 
@@ -49,11 +43,11 @@ with open('requirements.txt', 'r') as req_file, \
         author_email='distortedsignal@gmail.com',
         license='MIT',
         packages=['samlauthenticator'],
-        install_requires=unversioned_reqs,
+        install_requires=versioned_reqs,
         classifiers=[
             "Programming Language :: Python :: 3",
             "License :: OSI Approved :: MIT License",
             "Operating System :: OS Independent",
         ],
-        extras_require={"tests": unversioned_test_reqs}
+        extras_require={"tests": versioned_test_reqs}
     )
