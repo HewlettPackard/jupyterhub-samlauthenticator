@@ -22,7 +22,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 from setuptools import setup
 
-version = '0.0.2.6'
+version = '0.0.2.7'
 
 with open('requirements.txt', 'r') as req_file, \
         open('test_requirements.txt', 'r') as test_req_file, \
@@ -38,7 +38,7 @@ with open('requirements.txt', 'r') as req_file, \
         description='SAML Authenticator for JupyterHub',
         long_description=readme_text,
         long_description_content_type="text/markdown",
-        url='https://github.com/distortedsignal/samlauthenticator',
+        url='https://github.com/bluedatainc/jupyterhub-samlauthenticator',
         author='Tom Kelley',
         author_email='distortedsignal@gmail.com',
         license='MIT',
