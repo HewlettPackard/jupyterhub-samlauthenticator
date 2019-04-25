@@ -2,10 +2,6 @@ language: python
 sudo: false
 cache:
   - pip
-python:
-  - 3.6
-  - 3.7
-  - nightly
 
 before_install:
   - set -e
@@ -23,5 +19,6 @@ matrix:
   include:
     - python: 3.6
     - python: 3.7
+      dist: xenial
   allow_failures:
     - python: nightly
