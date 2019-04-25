@@ -1,0 +1,27 @@
+language: python
+sudo: false
+cache:
+  - pip
+python:
+  - 3.6
+  - 3.7
+  - nightly
+
+before_install:
+  - set -e
+
+install:
+  - pip install --upgrade pip
+  - pip install --upgrade --pre -r requirements.txt
+  - pip install --upgrade --pre -r test_requirements.txt
+
+script:
+  - pytest --cov=samlauthenticator --cov-report term-missing
+
+matrix:
+  fast_finish: true
+  include:
+    - python: 3.6
+    - python: 3.7
+  allow_failures:
+    - python: nightly
