@@ -3,8 +3,6 @@ sudo: false
 cache:
   - pip
 
-env:
-
 before_install:
   - set -e
 
@@ -22,5 +20,3 @@ matrix:
     - python: 3.6
     - python: 3.7
       dist: xenial
-  allow_failures:
-    - python: nightly
