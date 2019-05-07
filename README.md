@@ -31,6 +31,8 @@ This set up section assumes that python 3.6+, pip, and JupyterHub are already se
 
 If the `jupyterhub_config.py` file has not been generated, this would be a good time to generate it. For a primer on generating the config file, read [here](https://jupyterhub.readthedocs.io/en/stable/getting-started/config-basics.html).
 
+Currently, this Authenticator relies on the IdP being set up beforehand. This Authenticator ONLY supports HTTP-POST based authentication, and ONLY receives SAML Responses at the `/login` and `/hub/login` urls. There are currently no plans to support HTTP-Redirect based authentication or SOAP-based services.
+
 ### Installation
 
 In the context in which JupyterHub will be run, install the SAML Authenticator.
