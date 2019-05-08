@@ -3,13 +3,13 @@ sudo: false
 cache:
   - pip
 
+dist: xenial
+
 before_install:
   - set -e
 
 install:
-  - pip install --upgrade pip
-  - pip install --upgrade --pre -r requirements.txt
-  - pip install --upgrade --pre -r test_requirements.txt
+  - bash .install_deps
 
 script:
   - pytest --cov=samlauthenticator --cov-report term-missing
@@ -17,6 +17,21 @@ script:
 matrix:
   fast_finish: true
   include:
-    - python: 3.6
-    - python: 3.7
-      dist: xenial
+  - name: "Python 3.6 Latest Dependencies"
+    python: "3.6"
+    env: DEPS_VERSION=NEW
+  - name: "Python 3.6 Oldest Dependencies"
+    python: "3.6"
+    env: DEPS_VERSION=OLD
+  - name: "Python 3.7 Latest Dependencies"
+    python: "3.7"
+    env: DEPS_VERSION=NEW
+  - name: "Python 3.7 Oldest Dependencies"
+    python: "3.7"
+    env: DEPS_VERSION=OLD
+  - name: "Python Nightly Latest Dependencies"
+    python: nightly
+    env: DEPS_VERSION=NEW
+  - name: "Python Nightly Oldest Dependencies"
+    python: nightly
+    env: DEPS_VERSION=OLD
