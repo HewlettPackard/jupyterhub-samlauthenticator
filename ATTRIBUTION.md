@@ -26,3 +26,5 @@ OTHER DEALINGS IN THE SOFTWARE.
 * The HPE Open Source Review Board, especially Schreck (Jim Schreckengast), Clém (Clément Poulain), and Paul Holland.
 * Gunaseelan Lakshminarayanan, my manager at HPE
 * Tom Phelan, who sponsored the HPE OSRB review
+* @guillaumeeb for giving great feedback on the code
+* @minrk for giving a ton of help on how to integrate with JupyterHub
