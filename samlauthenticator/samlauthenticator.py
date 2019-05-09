@@ -181,6 +181,72 @@ class SAMLAuthenticator(Authenticator):
         c.SAMLAuthenticator.slo_forwad_on_logout = False
         '''
     )
+    entity_id = Unicode(
+        default_value='',
+        allow_none=True,
+        config=True,
+        help='''
+        The entity id for this specific JupyterHub instance. If
+        populated, this will be included in the SP metadata as
+        the entity id. If this is not populated, the entity will
+        populate as the protocol, host, and port of the request
+        to get the SAML Metadata.
+
+        Note that if the JupyterHub server will be behind a
+        proxy, this should be populated as the protocol, host,
+        and port where the server can be reached. For example,
+        if the JupyterHub server should be reached at
+        10.0.31.2:8000, this should be populated as
+        'https://10.0.31.2:8000'
+        '''
+    )
+    acs_endpoint_url = Unicode(
+        default_value='',
+        allow_none=True,
+        config=True,
+        help='''
+        The access consumer endpoint url for this specific
+        JupyterHub instance. If populated, this will be
+        included in the SP metadata as the acs endpoint
+        location. If populated, this field MUST tell the
+        SAML IdP to post to the ip address and port the
+        JupyterHub is running on concatenated to
+        "/hub/login". For example, if the server were
+        running on 10.0.31.2:8000, this value should be
+        'https://10.0.31.2:8000/hub/login'. It is necessary
+        to populate this field if the ACS Endpoint is
+        significantly different from the entity id.
+        If this is not populated, the entity location
+        will populate as the entity id concatenated
+        to '/hub/login'.
+        '''
+    )
+    organization_name = Unicode(
+        default_value='',
+        allow_none=True,
+        config=True,
+        help='''
+        A short-form organization name. Will be populated into the
+        SP metadata.
+        '''
+    )
+    organization_display_name = Unicode(
+        default_value='',
+        allow_none=True,
+        config=True,
+        help='''
+        A long-form organization name. Will be populated into the
+        SP metadata.
+        '''
+    )
+    organization_url = Unicode(
+        default_value='',
+        allow_none=True,
+        config=True,
+        help='''
+        A URL that uniquely identifies the organization.
+        '''
+    )
 
     def _get_metadata_from_file(self):
         with open(self.metadata_filepath, 'r') as saml_metadata:
@@ -579,29 +645,73 @@ class SAMLAuthenticator(Authenticator):
 
             metadata_text = '''<?xml version="1.0"?>
 <EntityDescriptor
-        entityID="{{ entityID }}"
+        entityID="{{ entityId }}"
         xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
         xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
         xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    <SPSSODescriptor AuthnRequestsSigned="false" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
-        <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
+    <SPSSODescriptor
+            AuthnRequestsSigned="false"
+            protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+        <NameIDFormat>
+            urn:oasis:names:tc:SAML:2.0:nameid-format:transient
+        </NameIDFormat>
         <AssertionConsumerService
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
                 Location="{{ entityLocation }}"/>
     </SPSSODescriptor>
+    {{ organizationMetadata }}
 </EntityDescriptor>
 '''
 
-            async def get(meta_handler_self):
-                protocol = meta_handler_self.request.protocol
-                host = meta_handler_self.request.host
+            organization_metadata = '''
+    <Organization>
+        {{ organizationName }}
+        {{ organizationDisplayName }}
+        {{ organizationUrl }}
+    </Organization>
+            '''
 
-                entity_id = protocol + '://' + host
-                entity_location = entity_id + '/hub/login'
+            organization_name_element = '''<OrganizationName>{{ name }}</OrganizationName>'''
+            organization_display_name_element = '''<OrganizationDisplayName>{{ displayName }}</OrganizationDisplayName>'''
+            organization_url_element = '''<OrganizationURL>{{ url }}</OrganizationURL>'''
+
+            def _make_org_metadata(meta_handler_self):
+                if authenticator_self.organization_name or \
+                        authenticator_self.organization_display_name or \
+                        authenticator_self.organization_url:
+                    org_name_elem = org_disp_name_elem = org_url_elem = ''
+
+                    if authenticator_self.organization_name:
+                        org_name_template = Template(meta_handler_self.organization_name_element)
+                        org_name_elem = org_name_template.render(name=authenticator_self.organization_name)
+
+                    if authenticator_self.organization_display_name:
+                        org_disp_name_template = Template(meta_handler_self.organization_display_name_element)
+                        org_disp_name_elem = org_disp_name_template.render(displayName=authenticator_self.organization_display_name)
+
+                    if authenticator_self.organization_url:
+                        org_url_template = Template(meta_handler_self.organization_url_element)
+                        org_url_elem = org_url_template.render(url=authenticator_self.organization_url)
+
+                    org_metadata_template = Template(meta_handler_self.organization_metadata)
+                    return org_metadata_template.render(organizationName=org_name_elem,
+                                                        organizationDisplayName=org_disp_name_elem,
+                                                        organizationUrl=org_url_elem)
+                return ''
+
+            async def get(meta_handler_self):
+                entity_id = authenticator_self.entity_id if authenticator_self.entity_id else \
+                        meta_handler_self.request.protocol + '://' + meta_handler_self.request.host
+
+                acs_endpoint_url = authenticator_self.acs_endpoint_url if authenticator_self.acs_endpoint_url else \
+                        entity_id + '/hub/login'
+
+                org_metadata_elem = meta_handler_self._make_org_metadata()
 
                 xml_template = Template(meta_handler_self.metadata_text)
-                xml_content = xml_template.render(entityID=entity_id,
-                                                  entityLocation=entity_location)
+                xml_content = xml_template.render(entityId=entity_id,
+                                                  entityLocation=acs_endpoint_url,
+                                                  organizationMetadata=org_metadata_elem)
 
                 meta_handler_self.set_header('Content-Type', 'text/xml')
                 meta_handler_self.write(xml_content)
