@@ -32,9 +32,11 @@ import subprocess
 # Imports to work with JupyterHub
 from jupyterhub.auth import Authenticator
 from jupyterhub.utils import maybe_future
+from jupyterhub.handlers.base import BaseHandler
 from jupyterhub.handlers.login import LoginHandler, LogoutHandler
 from tornado import gen, web
 from traitlets import Unicode, Bool
+from jinja2 import Template
 
 # Imports for me
 from lxml import etree
@@ -573,7 +575,41 @@ class SAMLAuthenticator(Authenticator):
                     html = logout_handler_self.render_template('logout.html')
                     logout_handler_self.finish(html)
 
+        class SAMLMetaHandler(BaseHandler):
+
+            metadata_text = '''<?xml version="1.0"?>
+<EntityDescriptor
+        entityID="{{ entityID }}"
+        xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+        xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+        xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+    <SPSSODescriptor AuthnRequestsSigned="false" protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+        <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>
+        <AssertionConsumerService
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+                Location="{{ entityLocation }}"/>
+    </SPSSODescriptor>
+</EntityDescriptor>
+'''
+
+            async def get(meta_handler_self):
+                protocol = meta_handler_self.request.protocol
+                host = meta_handler_self.request.host
+
+                entity_id = protocol + '://' + host
+                entity_location = entity_id + '/hub/login'
+
+                xml_template = Template(meta_handler_self.metadata_text)
+                xml_content = xml_template.render(entityID=entity_id,
+                                                  entityLocation=entity_location)
+
+                meta_handler_self.set_header('Content-Type', 'text/xml')
+                meta_handler_self.write(xml_content)
+
+
         return [('/login', SAMLLoginHandler),
                 ('/hub/login', SAMLLoginHandler),
                 ('/logout', SAMLLogoutHandler),
-                ('/hub/logout', SAMLLogoutHandler)]
+                ('/hub/logout', SAMLLogoutHandler),
+                ('/metadata', SAMLMetaHandler),
+                ('/hub/metadata', SAMLMetaHandler)]
