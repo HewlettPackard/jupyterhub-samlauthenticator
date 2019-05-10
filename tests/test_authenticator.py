@@ -27,6 +27,7 @@ import unittest
 
 from samlauthenticator import SAMLAuthenticator
 
+from jupyterhub.handlers.base import BaseHandler
 from lxml import etree
 from signxml import XMLVerifier
 from tornado.web import HTTPError
@@ -643,21 +644,63 @@ class TestMakeSPMetadata(unittest.TestCase):
         
         
     </Organization>
-            '''
+    '''
     org_display_name_org_metadata = '''
     <Organization>
         
         <OrganizationDisplayName>org_display_name</OrganizationDisplayName>
         
     </Organization>
-            '''
+    '''
     org_url_org_metadata = '''
     <Organization>
         
         
         <OrganizationURL>org_url</OrganizationURL>
     </Organization>
-            '''
+    '''
+    full_sp_meta_default = '''<?xml version="1.0"?>
+<EntityDescriptor
+        entityID="https://localhost:8000"
+        xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+        xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+        xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+    <SPSSODescriptor
+            AuthnRequestsSigned="false"
+            protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+        <NameIDFormat>
+            urn:oasis:names:tc:SAML:2.0:nameid-format:transient
+        </NameIDFormat>
+        <AssertionConsumerService
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+                Location="https://localhost:8000/hub/login"/>
+    </SPSSODescriptor>
+    
+</EntityDescriptor>'''
+    full_sp_meta_org_name = '''<?xml version="1.0"?>
+<EntityDescriptor
+        entityID="https://localhost:8000"
+        xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+        xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+        xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+    <SPSSODescriptor
+            AuthnRequestsSigned="false"
+            protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+        <NameIDFormat>
+            urn:oasis:names:tc:SAML:2.0:nameid-format:transient
+        </NameIDFormat>
+        <AssertionConsumerService
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+                Location="https://localhost:8000/hub/login"/>
+    </SPSSODescriptor>
+    
+    <Organization>
+        <OrganizationName>org_name</OrganizationName>
+        
+        
+    </Organization>
+    
+</EntityDescriptor>'''
 
     def test_make_org_metadata_no_org_info(self):
         a = SAMLAuthenticator()
@@ -690,3 +733,36 @@ class TestMakeSPMetadata(unittest.TestCase):
         a.organization_url = 'org_url'
 
         assert a._make_org_metadata() == self.org_url_org_metadata
+
+    def test_make_full_metadata_default(self):
+        a = SAMLAuthenticator()
+
+        mock_handler_self = MagicMock()
+        mock_handler_self.request.protocol = 'https'
+        mock_handler_self.request.host = 'localhost:8000'
+
+        assert a._make_sp_metadata(mock_handler_self) == self.full_sp_meta_default
+
+    def test_make_full_metadata_org_name(self):
+        a = SAMLAuthenticator()
+        a.organization_name = 'org_name'
+
+        mock_handler_self = MagicMock()
+        mock_handler_self.request.protocol = 'https'
+        mock_handler_self.request.host = 'localhost:8000'
+
+        assert a._make_sp_metadata(mock_handler_self) == self.full_sp_meta_org_name
+
+
+class TestGetHandlers(unittest.TestCase):
+    expected_handler_paths = ['/login', '/hub/login', '/logout', '/hub/logout', '/metadata', '/hub/metadata']
+
+    def test_get_handlers(self):
+        a = SAMLAuthenticator()
+
+        handler_list = a.get_handlers(None)
+
+        for url_path, handler_class in handler_list:
+            assert url_path in self.expected_handler_paths
+            assert isinstance(handler_class, type)
+            assert issubclass(handler_class, BaseHandler)

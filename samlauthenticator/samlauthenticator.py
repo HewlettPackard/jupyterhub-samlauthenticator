@@ -606,7 +606,7 @@ class SAMLAuthenticator(Authenticator):
         {{ organizationDisplayName }}
         {{ organizationUrl }}
     </Organization>
-            '''
+    '''
 
             if self.organization_name:
                 org_name_template = Template(organization_name_element)
