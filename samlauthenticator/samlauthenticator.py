@@ -569,41 +569,110 @@ class SAMLAuthenticator(Authenticator):
     def authenticate(self, handler, data):
         return self._authenticate(handler, data)
 
+    def _get_redirect_from_metadata_and_redirect(authenticator_self, element_name, handler_self):
+        saml_metadata_etree = authenticator_self._get_saml_metadata_etree()
+
+        handler_self.log.debug('Got metadata etree')
+
+        if saml_metadata_etree is None or len(saml_metadata_etree) == 0:
+            handler_self.log.error('Error getting SAML Metadata')
+            raise web.HTTPError(500)
+
+        handler_self.log.debug('Got valid metadata etree')
+
+        xpath_with_namespaces = authenticator_self._make_xpath_builder()
+
+        binding = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'
+        final_xpath = '//' + element_name + '[@Binding=\'' + binding + '\']/@Location'
+        handler_self.log.debug('Final xpath is: ' + final_xpath)
+
+        redirect_link_getter = xpath_with_namespaces(final_xpath)
+
+        # Here permanent MUST BE False - otherwise the /hub/logout GET will not be fired
+        # by the user's browser.
+        handler_self.redirect(redirect_link_getter(saml_metadata_etree)[0], permanent=False)
+
+    def _make_org_metadata(self):
+        if self.organization_name or \
+                self.organization_display_name or \
+                self.organization_url:
+            org_name_elem = org_disp_name_elem = org_url_elem = ''
+            organization_name_element = '''<OrganizationName>{{ name }}</OrganizationName>'''
+            organization_display_name_element = '''<OrganizationDisplayName>{{ displayName }}</OrganizationDisplayName>'''
+            organization_url_element = '''<OrganizationURL>{{ url }}</OrganizationURL>'''
+            organization_metadata = '''
+    <Organization>
+        {{ organizationName }}
+        {{ organizationDisplayName }}
+        {{ organizationUrl }}
+    </Organization>
+            '''
+
+            if self.organization_name:
+                org_name_template = Template(organization_name_element)
+                org_name_elem = org_name_template.render(name=self.organization_name)
+
+            if self.organization_display_name:
+                org_disp_name_template = Template(organization_display_name_element)
+                org_disp_name_elem = org_disp_name_template.render(displayName=self.organization_display_name)
+
+            if self.organization_url:
+                org_url_template = Template(organization_url_element)
+                org_url_elem = org_url_template.render(url=self.organization_url)
+
+            org_metadata_template = Template(organization_metadata)
+            return org_metadata_template.render(organizationName=org_name_elem,
+                                                organizationDisplayName=org_disp_name_elem,
+                                                organizationUrl=org_url_elem)
+
+        return ''
+
+    def _make_sp_metadata(authenticator_self, meta_handler_self):
+        metadata_text = '''<?xml version="1.0"?>
+<EntityDescriptor
+        entityID="{{ entityId }}"
+        xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
+        xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+        xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+    <SPSSODescriptor
+            AuthnRequestsSigned="false"
+            protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+        <NameIDFormat>
+            urn:oasis:names:tc:SAML:2.0:nameid-format:transient
+        </NameIDFormat>
+        <AssertionConsumerService
+                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+                Location="{{ entityLocation }}"/>
+    </SPSSODescriptor>
+    {{ organizationMetadata }}
+</EntityDescriptor>
+'''
+
+        entity_id = authenticator_self.entity_id if authenticator_self.entity_id else \
+                meta_handler_self.request.protocol + '://' + meta_handler_self.request.host
+
+        acs_endpoint_url = authenticator_self.acs_endpoint_url if authenticator_self.acs_endpoint_url else \
+                entity_id + '/hub/login'
+
+        org_metadata_elem = authenticator_self._make_org_metadata()
+
+        xml_template = Template(metadata_text)
+        return xml_template.render(entityId=entity_id,
+                                   entityLocation=acs_endpoint_url,
+                                   organizationMetadata=org_metadata_elem)
+
     def get_handlers(authenticator_self, app):
-
-        # This is maybe too cute by half, but I want to run with it.
-        def get_redirect_from_metadata_and_redirect(element_name, handler_self):
-            saml_metadata_etree = authenticator_self._get_saml_metadata_etree()
-
-            handler_self.log.debug('Got metadata etree')
-
-            if saml_metadata_etree is None or len(saml_metadata_etree) == 0:
-                handler_self.log.error('Error getting SAML Metadata')
-                raise web.HTTPError(500)
-
-            handler_self.log.debug('Got valid metadata etree')
-
-            xpath_with_namespaces = authenticator_self._make_xpath_builder()
-
-            binding = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'
-            final_xpath = '//' + element_name + '[@Binding=\'' + binding + '\']/@Location'
-            handler_self.log.debug('Final xpath is: ' + final_xpath)
-
-            redirect_link_getter = xpath_with_namespaces(final_xpath)
-
-            # Here permanent MUST BE False - otherwise the /hub/logout GET will not be fired
-            # by the user's browser.
-            handler_self.redirect(redirect_link_getter(saml_metadata_etree)[0], permanent=False)
-
 
         class SAMLLoginHandler(LoginHandler):
 
             async def get(login_handler_self):
                 login_handler_self.log.info('Starting SP-initiated SAML Login')
-                get_redirect_from_metadata_and_redirect('md:SingleSignOnService', login_handler_self)
+                authenticator_self._get_redirect_from_metadata_and_redirect('md:SingleSignOnService',
+                                                                            login_handler_self)
 
         class SAMLLogoutHandler(LogoutHandler):
-
+            # TODO: When the time is right to force users onto JupyterHub 1.0.0,
+            # refactor this.
             async def _shutdown_servers(self, user):
                 active_servers = [
                     name
@@ -636,83 +705,16 @@ class SAMLAuthenticator(Authenticator):
                     logout_handler_self._backend_logout_cleanup(logout_handler_self.current_user.name)
 
                 if authenticator_self.slo_forwad_on_logout:
-                    get_redirect_from_metadata_and_redirect('md:SingleLogoutService', logout_handler_self)
+                    authenticator_self._get_redirect_from_metadata_and_redirect('md:SingleLogoutService',
+                                                                                logout_handler_self)
                 else:
                     html = logout_handler_self.render_template('logout.html')
                     logout_handler_self.finish(html)
 
         class SAMLMetaHandler(BaseHandler):
 
-            metadata_text = '''<?xml version="1.0"?>
-<EntityDescriptor
-        entityID="{{ entityId }}"
-        xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
-        xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
-        xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-    <SPSSODescriptor
-            AuthnRequestsSigned="false"
-            protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
-        <NameIDFormat>
-            urn:oasis:names:tc:SAML:2.0:nameid-format:transient
-        </NameIDFormat>
-        <AssertionConsumerService
-                Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
-                Location="{{ entityLocation }}"/>
-    </SPSSODescriptor>
-    {{ organizationMetadata }}
-</EntityDescriptor>
-'''
-
-            organization_metadata = '''
-    <Organization>
-        {{ organizationName }}
-        {{ organizationDisplayName }}
-        {{ organizationUrl }}
-    </Organization>
-            '''
-
-            organization_name_element = '''<OrganizationName>{{ name }}</OrganizationName>'''
-            organization_display_name_element = '''<OrganizationDisplayName>{{ displayName }}</OrganizationDisplayName>'''
-            organization_url_element = '''<OrganizationURL>{{ url }}</OrganizationURL>'''
-
-            def _make_org_metadata(meta_handler_self):
-                if authenticator_self.organization_name or \
-                        authenticator_self.organization_display_name or \
-                        authenticator_self.organization_url:
-                    org_name_elem = org_disp_name_elem = org_url_elem = ''
-
-                    if authenticator_self.organization_name:
-                        org_name_template = Template(meta_handler_self.organization_name_element)
-                        org_name_elem = org_name_template.render(name=authenticator_self.organization_name)
-
-                    if authenticator_self.organization_display_name:
-                        org_disp_name_template = Template(meta_handler_self.organization_display_name_element)
-                        org_disp_name_elem = org_disp_name_template.render(displayName=authenticator_self.organization_display_name)
-
-                    if authenticator_self.organization_url:
-                        org_url_template = Template(meta_handler_self.organization_url_element)
-                        org_url_elem = org_url_template.render(url=authenticator_self.organization_url)
-
-                    org_metadata_template = Template(meta_handler_self.organization_metadata)
-                    return org_metadata_template.render(organizationName=org_name_elem,
-                                                        organizationDisplayName=org_disp_name_elem,
-                                                        organizationUrl=org_url_elem)
-                return ''
-
             async def get(meta_handler_self):
-                entity_id = authenticator_self.entity_id if authenticator_self.entity_id else \
-                        meta_handler_self.request.protocol + '://' + meta_handler_self.request.host
-
-                acs_endpoint_url = authenticator_self.acs_endpoint_url if authenticator_self.acs_endpoint_url else \
-                        entity_id + '/hub/login'
-
-                org_metadata_elem = meta_handler_self._make_org_metadata()
-
-                xml_template = Template(meta_handler_self.metadata_text)
-                xml_content = xml_template.render(entityId=entity_id,
-                                                  entityLocation=acs_endpoint_url,
-                                                  organizationMetadata=org_metadata_elem)
-
+                xml_content = authenticator_self._make_sp_metadata(meta_handler_self)
                 meta_handler_self.set_header('Content-Type', 'text/xml')
                 meta_handler_self.write(xml_content)
 
