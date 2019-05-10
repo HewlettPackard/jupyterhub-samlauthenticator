@@ -2,7 +2,7 @@
 (C) Copyright 2019 Hewlett Packard Enterprise Development LP
 
 Permission is hereby granted, free of charge, to any person obtaining a
-copy of this software and associated documentation files (the "Software"),
+copy of this software and associated documentation files (the 'Software'),
 to deal in the Software without restriction, including without limitation
 the rights to use, copy, modify, merge, publish, distribute, sublicense,
 and/or sell copies of the Software, and to permit persons to whom the
@@ -11,7 +11,7 @@ Software is furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included
 in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
 THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
@@ -23,16 +23,18 @@ from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
 
 import pytest
+import unittest
 
 from samlauthenticator import SAMLAuthenticator
 
 from lxml import etree
 from signxml import XMLVerifier
+from tornado.web import HTTPError
 
 from . import test_constants
 
 
-class TestMetadataRetrieval(object):
+class TestMetadataRetrieval(unittest.TestCase):
     # TODO: move metadata xml inside this object
     def _test_high_level_metadata_retrieval_functions(self, authenticator):
         assert authenticator._get_preferred_metadata_from_source() == test_constants.sample_metadata_xml
@@ -149,7 +151,7 @@ class TestMetadataRetrieval(object):
         assert a._get_saml_metadata_etree() is None
 
 
-class TestSAMLDocRetrieval(object):
+class TestSAMLDocRetrieval(unittest.TestCase):
     # TODO: move SAMLResponse inside this object
     def test_get_saml_doc_etree(self):
         # We expect the SAML Response to be coming in base 64 encoded
@@ -193,7 +195,7 @@ class TestSAMLDocRetrieval(object):
         assert a._get_saml_doc_etree(fake_data) is None
 
 
-class TestValidSamlResponse(object):
+class TestValidSamlResponse(unittest.TestCase):
     response_etree = etree.fromstring(test_constants.sample_response_xml)
     metadata_etree = etree.fromstring(test_constants.sample_metadata_xml)
     verified_signed_xml = XMLVerifier().verify(response_etree, x509_cert=test_constants.x509_cert).signed_xml
@@ -391,7 +393,7 @@ class TestValidSamlResponse(object):
         assert not a._verify_saml_response_fields(self.metadata_etree, tampered_etree)
 
 
-class TestGetUsername(object):
+class TestGetUsername(unittest.TestCase):
     response_etree = etree.fromstring(test_constants.sample_response_xml)
     verified_signed_xml = XMLVerifier().verify(response_etree, x509_cert=test_constants.x509_cert).signed_xml
 
@@ -414,7 +416,7 @@ class TestGetUsername(object):
         assert 'Bluedata' == a._get_username_from_saml_doc(tampered_assertion_etree, self.response_etree)
 
 
-class TestCreateUser(object):
+class TestCreateUser(unittest.TestCase):
     @patch('samlauthenticator.samlauthenticator.subprocess')
     @patch('samlauthenticator.samlauthenticator.pwd')
     def test_create_existing_user(self, mock_pwd, mock_subprocess):
@@ -495,7 +497,7 @@ class TestCreateUser(object):
         a._optional_user_add.assert_not_called()
 
 
-class TestAuthenticate(object):
+class TestAuthenticate(unittest.TestCase):
     def _confirm_tom(self, saml_data, mock_datetime, mock_pwd):
         mock_datetime.now.return_value = saml_data.datetime_stamp
         mock_datetime.strptime = datetime.strptime
@@ -586,3 +588,108 @@ class TestAuthenticate(object):
             mock_datetime.now.assert_called_once_with(timezone.utc)
             mock_subprocess.call.assert_called_once_with(['useradd', 'bluedata'])
 
+
+class TestGetRedirect(unittest.TestCase):
+
+    def test_get_valid_login_redirect(self):
+        a = SAMLAuthenticator()
+        a.metadata_content = test_constants.sample_metadata_xml
+
+        mock_handler_self = MagicMock()
+
+        a._get_redirect_from_metadata_and_redirect('md:SingleSignOnService', mock_handler_self)
+
+        mock_handler_self.redirect.assert_called_once_with(
+            'https://bluedata-test-before-deploy.onelogin.com/trust/saml2/http-redirect/sso/719630',
+            permanent=False)
+
+    def test_get_valid_logout_redirect(self):
+        a = SAMLAuthenticator()
+        a.metadata_content = test_constants.sample_metadata_xml
+
+        mock_handler_self = MagicMock()
+
+        a._get_redirect_from_metadata_and_redirect('md:SingleLogoutService', mock_handler_self)
+
+        mock_handler_self.redirect.assert_called_once_with(
+            'https://bluedata-test-before-deploy.onelogin.com/trust/saml2/http-redirect/slo/719630',
+            permanent=False)
+
+    def test_get_invalid_xml_element(self):
+        a = SAMLAuthenticator()
+        a.metadata_content = test_constants.sample_metadata_xml
+
+        mock_handler_self = MagicMock()
+
+        with self.assertRaises(IndexError):
+            a._get_redirect_from_metadata_and_redirect('md:BadElement', mock_handler_self)
+
+    def test_get_empty_metadata(self):
+        a = SAMLAuthenticator()
+        a.metadata_filepath = None
+        a.metadata_content = None
+        a.metadata_url = None
+
+        mock_handler_self = MagicMock()
+
+        with self.assertRaises(HTTPError):
+            a._get_redirect_from_metadata_and_redirect('md:BadElement', mock_handler_self)
+
+
+class TestMakeSPMetadata(unittest.TestCase):
+
+    def test_make_org_metadata_no_org_info(self):
+        a = SAMLAuthenticator()
+        a.organization_name = ''
+        a.organization_display_name = ''
+        a.organization_url = ''
+
+        assert a._make_org_metadata() == ''
+
+    def test_make_org_metadata_org_name(self):
+        a = SAMLAuthenticator()
+        a.organization_name = 'org_name'
+        a.organization_display_name = ''
+        a.organization_url = ''
+
+        expected_org_name_result = '''
+    <Organization>
+        <OrganizationName>org_name</OrganizationName>
+        
+        
+    </Organization>
+            '''
+
+        assert a._make_org_metadata() == expected_org_name_result
+
+    def test_make_org_metadata_org_display_name(self):
+        a = SAMLAuthenticator()
+        a.organization_name = ''
+        a.organization_display_name = 'org_display_name'
+        a.organization_url = ''
+
+        expected_org_name_result = '''
+    <Organization>
+        
+        <OrganizationDisplayName>org_display_name</OrganizationDisplayName>
+        
+    </Organization>
+            '''
+
+        assert a._make_org_metadata() == expected_org_name_result
+
+    def test_make_org_metadata_org_url(self):
+        a = SAMLAuthenticator()
+        a.organization_name = ''
+        a.organization_display_name = ''
+        a.organization_url = 'org_url'
+
+        expected_org_name_result = '''
+    <Organization>
+        
+        
+        <OrganizationURL>org_url</OrganizationURL>
+    </Organization>
+            '''
+
+        assert a._make_org_metadata() == expected_org_name_result
