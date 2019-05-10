@@ -10,9 +10,13 @@ before_install:
 
 install:
   - bash .install_deps
+  - pip install codecov
 
 script:
   - pytest --cov=samlauthenticator --cov-report term-missing
+
+after_success:
+  - codecov
 
 matrix:
   fast_finish: true
