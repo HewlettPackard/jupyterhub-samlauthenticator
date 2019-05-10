@@ -637,6 +637,27 @@ class TestGetRedirect(unittest.TestCase):
 
 
 class TestMakeSPMetadata(unittest.TestCase):
+    org_name_org_metadata = '''
+    <Organization>
+        <OrganizationName>org_name</OrganizationName>
+        
+        
+    </Organization>
+            '''
+    org_display_name_org_metadata = '''
+    <Organization>
+        
+        <OrganizationDisplayName>org_display_name</OrganizationDisplayName>
+        
+    </Organization>
+            '''
+    org_url_org_metadata = '''
+    <Organization>
+        
+        
+        <OrganizationURL>org_url</OrganizationURL>
+    </Organization>
+            '''
 
     def test_make_org_metadata_no_org_info(self):
         a = SAMLAuthenticator()
@@ -652,15 +673,7 @@ class TestMakeSPMetadata(unittest.TestCase):
         a.organization_display_name = ''
         a.organization_url = ''
 
-        expected_org_name_result = '''
-    <Organization>
-        <OrganizationName>org_name</OrganizationName>
-        
-        
-    </Organization>
-            '''
-
-        assert a._make_org_metadata() == expected_org_name_result
+        assert a._make_org_metadata() == self.org_name_org_metadata
 
     def test_make_org_metadata_org_display_name(self):
         a = SAMLAuthenticator()
@@ -668,15 +681,7 @@ class TestMakeSPMetadata(unittest.TestCase):
         a.organization_display_name = 'org_display_name'
         a.organization_url = ''
 
-        expected_org_name_result = '''
-    <Organization>
-        
-        <OrganizationDisplayName>org_display_name</OrganizationDisplayName>
-        
-    </Organization>
-            '''
-
-        assert a._make_org_metadata() == expected_org_name_result
+        assert a._make_org_metadata() == self.org_display_name_org_metadata
 
     def test_make_org_metadata_org_url(self):
         a = SAMLAuthenticator()
@@ -684,12 +689,4 @@ class TestMakeSPMetadata(unittest.TestCase):
         a.organization_display_name = ''
         a.organization_url = 'org_url'
 
-        expected_org_name_result = '''
-    <Organization>
-        
-        
-        <OrganizationURL>org_url</OrganizationURL>
-    </Organization>
-            '''
-
-        assert a._make_org_metadata() == expected_org_name_result
+        assert a._make_org_metadata() == self.org_url_org_metadata
