@@ -22,6 +22,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 # SAMLAuthenticator for JupyterHub
 
 [![Build Status](https://travis-ci.com/bluedatainc/jupyterhub-samlauthenticator.svg?branch=master)](https://travis-ci.com/bluedatainc/jupyterhub-samlauthenticator)
+[![codecov](https://codecov.io/gh/bluedatainc/jupyterhub-samlauthenticator/branch/master/graph/badge.svg)](https://codecov.io/gh/bluedatainc/jupyterhub-samlauthenticator)
+[![PyPI](https://img.shields.io/pypi/v/jupyterhub-samlauthenticator.svg)](https://pypi.python.org/pypi/jupyterhub-samlauthenticator)
 
 This is a SAML Authenticator for JupyterHub. With this code (and a little elbow grease), you can integrate your JupyterHub instance with a previously setup SAML Single Sign-on system!
 
