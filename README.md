@@ -74,6 +74,12 @@ By default, the SAMLAuthenticator expects the `NotOnOrAfter` and `NotBefore` fie
 
 If the timezone being passed in by the `NotOnOrAfter` and `NotBefore` fields cannot be read by `strptime()`, don't fear! So long as the timezone that the IdP resides in is known, it's possible to set the IdP's timezone. Set the `idp_timezone` field to a string that uniquely designates a timezone that can be looked up by [`pytz`](https://pypi.org/project/pytz/), and login should be able to continue.
 
+If an IdP MUST be configured to use a SAML entity id other than the protocol, url, and port number of the JupyterHub install, the `entity_id` field of the SAML Authenticator should be set. This should be a unique string that uniquely identifies the Service Provider in the SAML Architecture.
+
+If the JupyterHub instance is sitting behind a proxy or if the `entity_id` provided above is not a url that refers to where the JupyterHub instance is listening, the `acs_endpoint_url` MUST be set. This is where a user should POST data to complete a SAML Login procedure.
+
+The `organization_name`, `organization_display_name`, and `organization_url` are populated directly from the SAML Authenticator into the SAML SP metadata. If ANY of these values are present, there WILL BE an organization subsection in the SP metadata, and the organization subsection will have an element for each value that is populated. The organization will not have an element for any of the values that are not populated.
+
 The following two configurations are _usually_ on logout handlers, but because SAML is a special login method, we put these on the Authenticator.
 
 If the user's servers should be shut down when they logout, set `shutdown_on_logout` to `True`. This stops all servers that the user was running as part of their session. It is a somewhat dangerous to set this option to `True` because a user may not be done with computations that they are running on those servers.
@@ -121,6 +127,17 @@ c.SAMLAuthenticator.shutdown_on_logout = True
 
 # Don't send the user to the SLO address on logout
 c.SAMLAuthenticator.slo_forwad_on_logout = False
+
+# A corporate entity has specified a new entity id for this JupyterHub instance
+c.SAMLAuthenticator.entity_id = '6d112afe-0544-4e8e-8b7e-21e6f57763f9'
+
+# Because the entity id isn't a url, we need to set the acs endpoint url
+c.SAMLAuthenticator.acs_endpoint_url = 'https://10.0.31.2:8000/hub/login'
+
+# We need these organization values too.
+c.SAMLAuthenticator.organization_name = 'My Org'
+c.SAMLAuthenticator.organization_display_name = '''My Org's Display Name'''
+c.SAMLAuthenticator.organization_url = 'https://myorg.com'
 ```
 
 ## Developing and Contributing
@@ -149,7 +166,7 @@ pytest --cov=samlauthenticator --cov-report term-missing
 The output should be something like this:
 ```
 ============================= test session starts ==============================
-collected 45 items
+collected 59 items
 
 tests/test_authenticator.py ............................................ [ 97%]
 .                                                                        [100%]
@@ -160,7 +177,7 @@ samlauthenticator/__init__.py                1      0   100%
 samlauthenticator/samlauthenticator.py     241      2    99%   332, 440
 ----------------------------------------------------------------------
 TOTAL                                      242      2    99%
-========================== 45 passed in 1.00 seconds ===========================
+========================== 59 passed in 1.13 seconds ===========================
 ```
 
 Make your change, write your unit tests, then send a pull request. The Pull Request text MUST contain the Developer Certificate of Origin, which _should be_ prepopulated in the pull request text. Please note that the developer MUST sign off on the Pull Request and the developer MUST provide their full legal name and email address.

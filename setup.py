@@ -26,17 +26,21 @@ version = '0.0.4'
 
 with open('requirements.txt', 'r') as req_file, \
         open('test_requirements.txt', 'r') as test_req_file, \
-        open('README.md') as readme_file:
+        open('README.md', 'r') as readme_file, \
+        open('ATTRIBUTION.md', 'r') as attribution_file:
     versioned_reqs = req_file.read().split('\n')
     versioned_test_reqs = test_req_file.read().split('\n')
 
     readme_text = readme_file.read()
+    attribution_text = attribution_file.read()
+
+    distribution_text = '\n\n'.join([readme_text, attribution_text])
 
     setup(
         name='jupyterhub-samlauthenticator',
         version=version,
         description='SAML Authenticator for JupyterHub',
-        long_description=readme_text,
+        long_description=distribution_text,
         long_description_content_type="text/markdown",
         url='https://github.com/bluedatainc/jupyterhub-samlauthenticator',
         author='Tom Kelley',
