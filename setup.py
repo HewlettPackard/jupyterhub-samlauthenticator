@@ -22,7 +22,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 from setuptools import setup
 
-version = '0.0.4'
+version = '0.0.5'
 
 with open('requirements.txt', 'r') as req_file, \
         open('test_requirements.txt', 'r') as test_req_file, \
@@ -49,7 +49,8 @@ with open('requirements.txt', 'r') as req_file, \
         packages=['samlauthenticator'],
         install_requires=versioned_reqs,
         classifiers=[
-            "Programming Language :: Python :: 3",
+            "Programming Language :: Python :: 3.6",
+            "Programming Language :: Python :: 3.7",
             "License :: OSI Approved :: MIT License",
             "Operating System :: OS Independent",
         ],
