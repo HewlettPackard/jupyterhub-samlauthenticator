@@ -39,3 +39,5 @@ matrix:
   - name: "Python 3.7 Latest Dependencies"
     python: "3.7"
     env: DEPS_VERSION=NEW
+  allow_failures:
+  - python: nightly
