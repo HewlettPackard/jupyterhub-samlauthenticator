@@ -247,6 +247,16 @@ class SAMLAuthenticator(Authenticator):
         A URL that uniquely identifies the organization.
         '''
     )
+    create_system_users = Bool(
+        default_value=True,
+        allow_none=False,
+        config=True,
+        help='''
+        When True, SAMLAuthenticator will create system users
+        on user authentication if they don't exist already.
+        Default value is True.
+        '''
+    )
 
     def _get_metadata_from_file(self):
         with open(self.metadata_filepath, 'r') as saml_metadata:
@@ -531,7 +541,10 @@ class SAMLAuthenticator(Authenticator):
         if self.validate_username(username) and \
                 self.check_blacklist(username) and \
                 self.check_whitelist(username):
-            return self._optional_user_add(username)
+            if self.create_system_users:
+                return self._optional_user_add(username)
+
+            return True
 
         return False
 

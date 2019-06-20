@@ -497,6 +497,15 @@ class TestCreateUser(unittest.TestCase):
 
         a._optional_user_add.assert_not_called()
 
+    def test_create_system_users_option(self):
+        a = SAMLAuthenticator()
+        a.create_system_users = False
+        a._optional_user_add = MagicMock()
+
+        assert a._check_username_and_add_user('bluedata')
+
+        a._optional_user_add.assert_not_called()
+
 
 class TestAuthenticate(unittest.TestCase):
     def _confirm_tom(self, saml_data, mock_datetime, mock_pwd):
