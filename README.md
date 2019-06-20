@@ -56,6 +56,8 @@ Configure one of the accepted metadata sources. The SAMLAuthenticator can get me
 
 This is all the configuration the Authenticator _usually_ requires, but there are more configuration options to go through.
 
+#### Optional Configuration
+
 If the user that should be created and logged in from a given SAML Response is _not_ specified by the NameID element in the SAML Assertion, an alternate field can be specified. Replace the `xpath_username_location` field in the `SAMLAuthenticator` with an XPath that points to the desired field in the SAML Assertion. Note that this value must be able to be compiled to an XPath by Python's `lxml` module. The namespaces that will be present for this XPath are as follows:
 
 ```py
@@ -85,6 +87,8 @@ The following two configurations are _usually_ on logout handlers, but because S
 If the user's servers should be shut down when they logout, set `shutdown_on_logout` to `True`. This stops all servers that the user was running as part of their session. It is a somewhat dangerous to set this option to `True` because a user may not be done with computations that they are running on those servers.
 
 The SAMLAuthenticator _usually_ attempts to forward users to the SLO URI set in the SAML Metadata. If this is not the desired behavior for whatever reason, set `slo_forward_on_logout` to `False`. This will change the page the user is forwarded to on logout from the page specified in the xml metadata to the standard jupyterhub logout page.
+
+SAMLAuthenticator creates system users by default on successful authentication. If you are running JupyterHub as a non-root user, you may need to turn off this functionality by setting `create_system_users` to `False`.
 
 #### Example Configurations
 
@@ -138,6 +142,9 @@ c.SAMLAuthenticator.acs_endpoint_url = 'https://10.0.31.2:8000/hub/login'
 c.SAMLAuthenticator.organization_name = 'My Org'
 c.SAMLAuthenticator.organization_display_name = '''My Org's Display Name'''
 c.SAMLAuthenticator.organization_url = 'https://myorg.com'
+
+# Turn off system user creation on authentication
+c.SAMLAuthenticator.create_system_users = False
 ```
 
 ## Developing and Contributing
