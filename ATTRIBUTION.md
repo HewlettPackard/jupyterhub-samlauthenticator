@@ -28,3 +28,5 @@ OTHER DEALINGS IN THE SOFTWARE.
 * Tom Phelan, who sponsored the HPE OSRB review
 * @guillaumeeb for giving great feedback on the code
 * @minrk for giving a ton of help on how to integrate with JupyterHub
+* @mwilbz for making a great issue and patch
+* @itsnagaraj for making a great issue, providing a lot of thought and code, and being very patient with development of the project
