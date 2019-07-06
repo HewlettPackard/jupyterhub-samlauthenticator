@@ -29,7 +29,7 @@ matrix:
     env: DEPS_VERSION=NEW
   - name: "Python Nightly Oldest Dependencies"
     python: nightly
-    env: DEPS_VERSION=OLD
+    env: DEPS_VERSION=POST_3.8
   - name: "Python 3.6 Latest Dependencies"
     python: "3.6"
     env: DEPS_VERSION=NEW
