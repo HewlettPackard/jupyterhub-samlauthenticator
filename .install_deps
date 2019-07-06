@@ -3,7 +3,7 @@
 if [[ $DEPS_VERSION = "OLD" ]]; then
     pip install Jinja2==2.4 jupyterhub==0.9.0 lxml==4.2.1 signxml==2.6.0 pytz==2019.1
     pip install pytest==4.0.0 pytest-asyncio==0.10.0 pytest-cov==2.0.0;
-else if [[ $DEPS_VERSION = "POST_3.8" ]]; then
+else if [[ $DEPS_VERSION = "AFTER38" ]]; then
     pip install Jinja2==2.4 jupyterhub==0.9.0 lxml==4.3.4 signxml==2.6.0 pytz==2019.1
     pip install pytest==4.0.0 pytest-asyncio==0.10.0 pytest-cov==2.0.0;
 else
