@@ -200,6 +200,20 @@ class SAMLAuthenticator(Authenticator):
         'https://10.0.31.2:8000'
         '''
     )
+    nameid_format = Unicode(
+        default_value='urn:oasis:names:tc:SAML:2.0:nameid-format:transient',
+        allow_none=True,
+        config=True,
+        help='''
+        The nameId format to set in the Jupyter SAML Metadata.
+        Detaults to transient nameid-format, but other values such as
+        urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress or
+        urn:oasis:names:tc:SAML:2.0:nameid-format:persistent
+        are available. See section 8.3 of the spec
+        http://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf
+        for more details.
+        '''
+    )
     acs_endpoint_url = Unicode(
         default_value='',
         allow_none=True,
@@ -651,7 +665,7 @@ class SAMLAuthenticator(Authenticator):
             AuthnRequestsSigned="false"
             protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
         <NameIDFormat>
-            urn:oasis:names:tc:SAML:2.0:nameid-format:transient
+            {{ nameIdFormat }}
         </NameIDFormat>
         <AssertionConsumerService
                 Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
@@ -671,6 +685,7 @@ class SAMLAuthenticator(Authenticator):
 
         xml_template = Template(metadata_text)
         return xml_template.render(entityId=entity_id,
+                                   nameIdFormat=authenticator_self.nameid_format,
                                    entityLocation=acs_endpoint_url,
                                    organizationMetadata=org_metadata_elem)
 
