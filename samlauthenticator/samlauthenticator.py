@@ -271,6 +271,18 @@ class SAMLAuthenticator(Authenticator):
         Default value is True.
         '''
     )
+    create_system_user_binary = Unicode(
+        default_value='useradd',
+        allow_none=True,
+        config=True,
+        help='''
+        When SAMLAuthenticator create system user (also called "just in time user provisioning")
+        it calls the binary specified in this property in a subprocess to perform the user creation.
+        Default value is useradd, but any other existing binary in the PATH would be called
+        followed by the username to actually add.
+        The binary must follow the same return code than useradd, i.e. return 0 in case of success.
+        '''
+    )
 
     def _get_metadata_from_file(self):
         with open(self.metadata_filepath, 'r') as saml_metadata:
@@ -549,7 +561,7 @@ class SAMLAuthenticator(Authenticator):
         except KeyError:
             # Return the `not` here because a 0 return indicates success and I want to
             # say something like "if adding the user is successful, return username"
-            return not subprocess.call(['useradd', username])
+            return not subprocess.call([self.create_system_user_binary, username])
 
     def _check_username_and_add_user(self, username):
         if self.validate_username(username) and \
