@@ -88,7 +88,11 @@ If the user's servers should be shut down when they logout, set `shutdown_on_log
 
 The SAMLAuthenticator _usually_ attempts to forward users to the SLO URI set in the SAML Metadata. If this is not the desired behavior for whatever reason, set `slo_forward_on_logout` to `False`. This will change the page the user is forwarded to on logout from the page specified in the xml metadata to the standard jupyterhub logout page.
 
-SAMLAuthenticator creates system users by default on successful authentication. If you are running JupyterHub as a non-root user, you may need to turn off this functionality by setting `create_system_users` to `False`.
+The SAMLAuthenticator creates system users by default on successful authentication. If you are running JupyterHub as a non-root user, you may need to turn off this functionality by setting `create_system_users` to `False`.
+
+The default nameid format that the SAMLAuthenticator expects is defined by the SAML Spec as `urn:oasis:names:tc:SAML:2.0:nameid-format:transient`. This can be changed by setting the `nameid_format` field on the SAMLAuthenticator in the JupyterHub Config file.
+
+If the server administrator wants to create local users for each JupyterHub user but doesn't want to use the `useradd` utility, a user can be added with any binary on the host system Set the `create_system_user_binary` field to either a) a full path to the binary or b) the name of a binary on the host's path. Please note, if the binary exits with code 0, the Authenticator will assume that the user add succeeded, and if the binary exits with any code _other than 0_, it will be assumed that creating the user failed.
 
 #### Example Configurations
 
@@ -144,7 +148,19 @@ c.SAMLAuthenticator.organization_display_name = '''My Org's Display Name'''
 c.SAMLAuthenticator.organization_url = 'https://myorg.com'
 
 # Turn off system user creation on authentication
+# This feature added by GitHub user @mwilbz
 c.SAMLAuthenticator.create_system_users = False
+
+# Change nameid format to something else
+# This feature added by GitHub user @killerwhile
+c.SAMLAuthenticator.nameid_format = 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent'
+
+# Change the binary called to create users
+# This feature added by GitHub user @killerwhile
+# If the new_useradd binary isn't on the path, a full path can be provided
+c.SAMLAuthenticator.create_system_user_binary = '/full/path/to/new_useradd'
+# If the new_useradd binary is on the path, we can use the first-found instance
+c.SAMLAuthenticator.create_system_user_binary = 'new_useradd'
 ```
 
 ## Developing and Contributing

@@ -456,6 +456,35 @@ class TestCreateUser(unittest.TestCase):
         mock_pwd.getpwnam.assert_called_once_with('Bluedata')
         mock_subprocess.call.assert_called_once_with(['useradd', 'Bluedata'])
 
+    @patch('samlauthenticator.samlauthenticator.subprocess')
+    @patch('samlauthenticator.samlauthenticator.pwd')
+    def test_create_user_alternate_binary(self, mock_pwd, mock_subprocess):
+        mock_pwd.getpwnam.side_effect = KeyError('Bad username')
+        mock_subprocess.call.return_value = 0
+        binary_value = 'test_binary'
+
+        a = SAMLAuthenticator()
+        a.create_system_user_binary = binary_value
+
+        assert a._optional_user_add('Bluedata')
+
+        mock_pwd.getpwnam.assert_called_once_with('Bluedata')
+        mock_subprocess.call.assert_called_once_with([binary_value, 'Bluedata'])
+
+    @patch('samlauthenticator.samlauthenticator.subprocess')
+    @patch('samlauthenticator.samlauthenticator.pwd')
+    def test_create_user_alternate_binary_existing_user(self, mock_pwd, mock_subprocess):
+        mock_pwd.getpwnam.return_value = True
+        binary_value = 'test_binary'
+
+        a = SAMLAuthenticator()
+        a.create_system_user_binary = binary_value
+
+        assert a._optional_user_add('Bluedata')
+
+        mock_pwd.getpwnam.assert_called_once_with('Bluedata')
+        mock_subprocess.call.assert_not_called()
+
     def test_check_username_valid_username_no_black_lists(self):
         a = SAMLAuthenticator()
         a._optional_user_add = MagicMock()
@@ -789,6 +818,7 @@ class TestMakeSPMetadata(unittest.TestCase):
         mock_handler_self.request.host = 'localhost:8000'
 
         assert a._make_sp_metadata(mock_handler_self) == self.full_sp_meta_nameid_format
+
 
 class TestGetHandlers(unittest.TestCase):
     expected_handler_paths = ['/login', '/hub/login', '/logout', '/hub/logout', '/metadata', '/hub/metadata']
