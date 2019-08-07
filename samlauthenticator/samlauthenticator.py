@@ -276,11 +276,13 @@ class SAMLAuthenticator(Authenticator):
         allow_none=True,
         config=True,
         help='''
-        When SAMLAuthenticator create system user (also called "just in time user provisioning")
+        When SAMLAuthenticator creates a system user (also called "just in time user provisioning")
         it calls the binary specified in this property in a subprocess to perform the user creation.
-        Default value is useradd, but any other existing binary in the PATH would be called
-        followed by the username to actually add.
-        The binary must follow the same return code than useradd, i.e. return 0 in case of success.
+        Default value is 'useradd'.
+        This can be set to any binary in the host machine's PATH or a full path to an alternate
+        binary not in the host's path. This binary MUST accpet calls of the form
+        "$\{binary_name\} $\{user_name\}" and exit with a status of zero on valid user addition or
+        a non-zero status in the failure case.
         '''
     )
 
