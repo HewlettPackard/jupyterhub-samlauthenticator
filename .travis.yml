@@ -21,23 +21,29 @@ after_success:
 matrix:
   fast_finish: true
   include:
+  - name: "Python 3.8 Oldest Dependencies"
+    python: "3.8"
+    env: DEPS_VERSION=AFTER38
+  - name: "Python 3.8 Latest Dependencies"
+    python: "3.8"
+    env: DEPS_VERSION=NEW
   - name: "Python 3.7 Oldest Dependencies"
     python: "3.7"
     env: DEPS_VERSION=OLD
-  - name: "Python Nightly Latest Dependencies"
-    python: nightly
-    env: DEPS_VERSION=NEW
-  - name: "Python Nightly Oldest Dependencies"
-    python: nightly
-    env: DEPS_VERSION=AFTER38
-  - name: "Python 3.6 Latest Dependencies"
-    python: "3.6"
+  - name: "Python 3.7 Latest Dependencies"
+    python: "3.7"
     env: DEPS_VERSION=NEW
   - name: "Python 3.6 Oldest Dependencies"
     python: "3.6"
     env: DEPS_VERSION=OLD
-  - name: "Python 3.7 Latest Dependencies"
-    python: "3.7"
+  - name: "Python 3.6 Latest Dependencies"
+    python: "3.6"
+    env: DEPS_VERSION=NEW
+  - name: "Python Nightly Oldest Dependencies"
+    python: nightly
+    env: DEPS_VERSION=AFTER38
+  - name: "Python Nightly Latest Dependencies"
+    python: nightly
     env: DEPS_VERSION=NEW
   allow_failures:
   - python: nightly
