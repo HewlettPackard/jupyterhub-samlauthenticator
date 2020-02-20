@@ -134,7 +134,7 @@ c.SAMLAuthenticator.idp_timezone = 'US/Eastern'
 c.SAMLAuthenticator.shutdown_on_logout = True
 
 # Don't send the user to the SLO address on logout
-c.SAMLAuthenticator.slo_forwad_on_logout = False
+c.SAMLAuthenticator.slo_forward_on_logout = False
 
 # A corporate entity has specified a new entity id for this JupyterHub instance
 c.SAMLAuthenticator.entity_id = '6d112afe-0544-4e8e-8b7e-21e6f57763f9'
