@@ -746,7 +746,13 @@ class SAMLAuthenticator(Authenticator):
                 if logout_handler_self.current_user:
                     logout_handler_self._backend_logout_cleanup(logout_handler_self.current_user.name)
 
-                if authenticator_self.slo_forward_on_logout:
+                # This is a little janky, but there was a misspelling in a prior version
+                # where someone could have set the wrong flag because of the documentation.
+                # We will honor the misspelling until we rev the version, and then we will
+                # break backward compatibility.
+                forward_on_logout = True if authenticator_self.slo_forward_on_logout else False
+                forwad_on_logout = True if authenticator_self.slo_forwad_on_logout else False
+                if forward_on_logout or forwad_on_logout:
                     authenticator_self._get_redirect_from_metadata_and_redirect('md:SingleLogoutService',
                                                                                 logout_handler_self)
                 else:

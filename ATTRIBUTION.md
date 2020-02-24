@@ -31,3 +31,4 @@ OTHER DEALINGS IN THE SOFTWARE.
 * @mwilbz for making a great issue and patch
 * @itsnagaraj for making a great issue, providing a lot of thought and code, and being very patient with development of the project
 * @killerwhile for jumping in and making some really neat additions
+* @duongnt for being very patient and checking the spelling in the code and in the docs
