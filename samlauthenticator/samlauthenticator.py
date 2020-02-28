@@ -76,7 +76,7 @@ class SAMLAuthenticator(Authenticator):
         '''
     )
     xpath_username_location = Unicode(
-        default_value='string(//saml:NameID/text())',
+        default_value='//saml:NameID/text()',
         allow_none=True,
         config=True,
         help='''
@@ -92,7 +92,6 @@ class SAMLAuthenticator(Authenticator):
             'saml' : 'urn:oasis:names:tc:SAML:2.0:assertion',
             'samlp': 'urn:oasis:names:tc:SAML:2.0:protocol'
         }
-	Note that the xpath should return a string, not a node-set.
         '''
     )
     login_post_field = Unicode(
@@ -541,8 +540,10 @@ class SAMLAuthenticator(Authenticator):
         xpath_fun = xpath_with_namespaces(self.xpath_username_location)
         xpath_result = xpath_fun(signed_xml)
 
-        if xpath_result:
+        if type(xpath_result) is str:
             return xpath_result
+	if type(xpath_result) is list:
+            return xpath_result[0]
 
         self.log.warning('Could not find name from name XPath')
         return None

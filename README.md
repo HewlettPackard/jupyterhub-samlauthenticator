@@ -115,7 +115,7 @@ c.SAMLAuthenticator.metadata_filepath = '/etc/jupyterhub/metadata.xml'
 
 # A field was placed in the SAML Response that contains the user's first name and last name separated by a period.
 # Let's use that for the username.
-c.SAMLAuthenticator.xpath_username_location = 'string(//saml:Attribute[@Name="DottedName"]/saml:AttributeValue/text())'
+c.SAMLAuthenticator.xpath_username_location = '//saml:Attribute[@Name="DottedName"]/saml:AttributeValue/text()'
 
 # The IdP is sending the SAML Response in a field named 'R'
 c.SAMLAuthenticator.login_post_field = 'R'
