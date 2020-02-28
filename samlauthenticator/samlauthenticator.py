@@ -744,7 +744,7 @@ class SAMLAuthenticator(Authenticator):
                         futures.append(maybe_future(self.stop_single_user(user, server_name)))
                     await asyncio.gather(*futures)
 
-            def _backend_logout_cleanup(self: SAMLLogoutHandler, name: str) -> None:
+            def _backend_logout_cleanup(self, name: str) -> None:
                 self.log.info("User logged out: %s", name)
                 self.clear_login_cookie()
                 self.statsd.incr('logout')
