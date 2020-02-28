@@ -542,7 +542,7 @@ class SAMLAuthenticator(Authenticator):
 
         if type(xpath_result) is str:
             return xpath_result
-	if type(xpath_result) is list:
+        if type(xpath_result) is list and len(xpath_result) > 0:
             return xpath_result[0]
 
         self.log.warning('Could not find name from name XPath')
