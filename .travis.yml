@@ -13,7 +13,6 @@ install:
   - pip install codecov
 
 script:
-  - pytest --cov=samlauthenticator --cov-report term-missing
   - mypy samlauthenticator/samlauthenticator.py --ignore-missing-imports
 
 after_success:
