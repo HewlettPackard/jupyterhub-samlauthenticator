@@ -607,6 +607,7 @@ class SAMLAuthenticator(Authenticator):
             self.log.debug('Authenticated user using SAML')
             username = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
             username = self.normalize_username(username)
+            username = username + 'this-should-break-mypy'
             if username:
                 self.log.debug('Optionally create and return user: ' + username)
                 username_add_result = self._check_username_and_add_user(username)
