@@ -654,12 +654,12 @@ class SAMLAuthenticator(Authenticator):
         self.log.error('Failed to validate username or failed list check')
         return None
 
-    def _check_role(self, user_roles):
+    def _check_role(self, user_roles: str) -> bool:
         allowed_roles = [x.strip() for x in self.allowed_roles.split(',')]
 
         return any(elem in allowed_roles for elem in user_roles)
 
-    def _valid_roles_in_assertion(self, signed_xml, saml_doc_etree):
+    def _valid_roles_in_assertion(self, signed_xml: Any, saml_doc_etree: Any) -> bool:
         user_roles = self._get_roles_from_saml_doc(signed_xml, saml_doc_etree)
 
         user_roles_result = self._check_role(user_roles)
@@ -667,7 +667,7 @@ class SAMLAuthenticator(Authenticator):
             self.log.error('User role not authorized')
         return user_roles_result
 
-    def _valid_config_and_roles(self, signed_xml, saml_doc_etree):
+    def _valid_config_and_roles(self, signed_xml: Any, saml_doc_etree: Any) -> bool:
         if self.allowed_roles and self.xpath_role_location:
             return self._valid_roles_in_assertion(signed_xml, saml_doc_etree)
 
@@ -708,16 +708,6 @@ class SAMLAuthenticator(Authenticator):
                 return self._check_username_and_add_user(username)
 
             self.log.error('Assertion did not have appropriate roles')
-            if username:
-                self.log.debug('Optionally create and return user: ' + username)
-                username_add_result = self._check_username_and_add_user(username)
-                if username_add_result:
-                    return username
-
-                self.log.error('Failed to add user')
-                return None
-
-            self.log.error('Failed to get username from SAML Response')
             return None
 
         self.log.error('Error validating SAML response')
