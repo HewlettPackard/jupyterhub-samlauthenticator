@@ -540,7 +540,7 @@ class SAMLAuthenticator(Authenticator):
         xpath_fun = xpath_with_namespaces(self.xpath_username_location)
         xpath_result = xpath_fun(signed_xml)
 
-        if type(xpath_result) is str:
+        if isinstance(xpath_result, etree._ElementUnicodeResult):
             return xpath_result
         if type(xpath_result) is list and len(xpath_result) > 0:
             return xpath_result[0]
