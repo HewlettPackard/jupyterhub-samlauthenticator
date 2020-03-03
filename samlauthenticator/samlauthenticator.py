@@ -281,7 +281,7 @@ class SAMLAuthenticator(Authenticator):
         Default value is 'useradd'.
         This can be set to any binary in the host machine's PATH or a full path to an alternate
         binary not in the host's path. This binary MUST accpet calls of the form
-        "$\{binary_name\} $\{user_name\}" and exit with a status of zero on valid user addition or
+        "${binary_name} ${user_name}" and exit with a status of zero on valid user addition or
         a non-zero status in the failure case.
         '''
     )
@@ -539,11 +539,13 @@ class SAMLAuthenticator(Authenticator):
 
         xpath_fun = xpath_with_namespaces(self.xpath_username_location)
         xpath_result = xpath_fun(signed_xml)
-        if xpath_result:
+
+        if isinstance(xpath_result, etree._ElementUnicodeResult):
+            return xpath_result
+        if type(xpath_result) is list and len(xpath_result) > 0:
             return xpath_result[0]
 
         self.log.warning('Could not find name from name XPath')
-
         return None
 
     def _get_username_from_saml_doc(self, signed_xml, decoded_saml_doc):

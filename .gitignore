@@ -7,3 +7,6 @@ venv/
 *.egg-info/
 build/
 dist/
+
+# IDE settings
+.vscode

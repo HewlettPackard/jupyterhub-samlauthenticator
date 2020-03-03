@@ -405,6 +405,16 @@ class TestGetUsername(unittest.TestCase):
         assert 'Bluedata' == a._get_username_from_saml_etree(self.response_etree)
         assert 'Bluedata' == a._get_username_from_saml_doc(self.verified_signed_xml, self.response_etree)
 
+        a.xpath_username_location = 'string({})'.format(a.xpath_username_location)
+        assert 'Bluedata' == a._get_username_from_saml_etree(self.verified_signed_xml)
+        assert 'Bluedata' == a._get_username_from_saml_etree(self.response_etree)
+        assert 'Bluedata' == a._get_username_from_saml_doc(self.verified_signed_xml, self.response_etree)
+
+        a.xpath_username_location = 'substring-before({}, "data")'.format(a.xpath_username_location)
+        assert 'Blue' == a._get_username_from_saml_etree(self.verified_signed_xml)
+        assert 'Blue' == a._get_username_from_saml_etree(self.response_etree)
+        assert 'Blue' == a._get_username_from_saml_doc(self.verified_signed_xml, self.response_etree)
+
     def test_get_username_no_nameid(self):
         tampered_assertion_etree = etree.fromstring(test_constants.tampered_assertion_no_nameid)
         tampered_response_etree  = etree.fromstring(test_constants.tampered_response_no_nameid)
