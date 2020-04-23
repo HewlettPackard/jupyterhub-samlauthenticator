@@ -170,6 +170,17 @@ class SAMLAuthenticator(Authenticator):
         class, this should be on the Authenticator.
         '''
     )
+    slo_forwad_on_logout = Bool(
+        default_value=True,
+        allow_none=False,
+        config=True,
+        help='''
+        [DEPRECATED] Please use `slo_forward_on_logout`.
+        This attribute will be removed in the next version.
+        See https://github.com/bluedatainc/jupyterhub-samlauthenticator/releases/tag/samlauthenticator-0.0.7
+        for more information.
+        '''
+    )
     slo_forward_on_logout = Bool(
         default_value=True,
         allow_none=False,
