@@ -427,6 +427,46 @@ class TestGetUsername(unittest.TestCase):
         assert 'Bluedata' == a._get_username_from_saml_doc(tampered_assertion_etree, self.response_etree)
 
 
+class TestRoleAccess(unittest.TestCase):
+
+    def test_check_role(self):
+        a = SAMLAuthenticator()
+        a.allowed_roles = 'group1'
+
+        assert a._check_role(['group1'])
+
+    def test_check_roles(self):
+        a = SAMLAuthenticator()
+        a.allowed_roles='group1, group2, group3'
+
+        assert a._check_role(['group2'])
+        assert a._check_role(['group2', 'group3'])
+        assert a._check_role(['group1', 'nogroup1'])
+
+    def test_check_role_allow_all(self):
+        a = SAMLAuthenticator()
+
+        assert a._check_role([])
+        assert a._check_role(['group1'])
+        assert a._check_role(['group1', 'group2'])
+
+    def test_check_role_empty_allow_all(self):
+        a = SAMLAuthenticator()
+        a.allowed_roles=''
+
+        assert a._check_role([])
+        assert a._check_role(['group1'])
+        assert a._check_role(['group1', 'group2'])
+
+    def test_check_role_fails(self):
+        a = SAMLAuthenticator()
+        a.allowed_roles='group1,group2,group3'
+
+        assert not a._check_role([])
+        assert not a._check_role(['nogroup1'])
+        assert not a._check_role(['nogroup1', 'nogroup2'])
+
+
 class TestCreateUser(unittest.TestCase):
     @patch('samlauthenticator.samlauthenticator.subprocess')
     @patch('samlauthenticator.samlauthenticator.pwd')

@@ -296,6 +296,25 @@ class SAMLAuthenticator(Authenticator):
         a non-zero status in the failure case.
         '''
     )
+    xpath_role_location = Unicode(
+        default_value='//saml:Role/text()',
+        allow_none=True,
+        config=True,
+        help='''
+        This is an XPath that specifies where the user's roles are located in
+        the SAML  Assertion. This is to restrict users with certain roles
+        granted by the administrator to have access to jupyterhub.
+        '''
+    )
+    allowed_roles = Unicode(
+        default_value=None,
+        allow_none=True,
+        config=True,
+        help='''
+        Comma-separated list of roles. SAMLAuthenticator will restrict access to
+        jupyterhub to these roles if specified.
+        '''
+    ) 
 
     def _get_metadata_from_file(self):
         with open(self.metadata_filepath, 'r') as saml_metadata:
@@ -559,6 +578,17 @@ class SAMLAuthenticator(Authenticator):
         self.log.warning('Could not find name from name XPath')
         return None
 
+    def _get_roles_from_saml_etree(self, signed_xml):
+        xpath_with_namespaces = self._make_xpath_builder()
+        xpath_fun = xpath_with_namespaces(self.xpath_role_location)
+        xpath_result = xpath_fun(signed_xml)
+
+        if xpath_result:
+            return xpath_result
+
+        self.log.warning('Could not find role from role XPath')
+        return None
+
     def _get_username_from_saml_doc(self, signed_xml, decoded_saml_doc):
         user_name = self._get_username_from_saml_etree(signed_xml)
         if user_name:
@@ -567,6 +597,15 @@ class SAMLAuthenticator(Authenticator):
         self.log.info('Did not get user name from signed SAML Response')
 
         return self._get_username_from_saml_etree(decoded_saml_doc)
+
+    def _get_roles_from_saml_doc(self, signed_xml, decoded_saml_doc):
+        user_roles = self._get_roles_from_saml_etree(signed_xml)
+        if user_roles:
+            return user_roles
+
+        self.log.info('Did not get user roles from signed SAML Response')
+
+        return self._get_roles_from_saml_etree(decoded_saml_doc)
 
     def _optional_user_add(self, username):
         try:
@@ -589,6 +628,14 @@ class SAMLAuthenticator(Authenticator):
 
         return False
 
+    def _check_role(self, user_roles):
+        if self.allowed_roles:
+            allowed_roles = [x.strip() for x in self.allowed_roles.split(',')]
+
+            return any(elem in allowed_roles for elem in user_roles)
+
+        return True
+
     def _authenticate(self, handler, data):
         saml_doc_etree = self._get_saml_doc_etree(data)
 
@@ -608,6 +655,13 @@ class SAMLAuthenticator(Authenticator):
             self.log.debug('Authenticated user using SAML')
             username = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
             username = self.normalize_username(username)
+            user_roles = self._get_roles_from_saml_doc(signed_xml, saml_doc_etree)
+
+            user_roles_result = self._check_role(user_roles)
+            if not user_roles_result:
+                self.log.error('User role not authorized')
+                return None
+
             self.log.debug('Optionally create and return user: ' + username)
             username_add_result = self._check_username_and_add_user(username)
             if username_add_result:
