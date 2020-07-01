@@ -655,7 +655,7 @@ class SAMLAuthenticator(Authenticator):
             self.log.debug('Authenticated user using SAML')
             username = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
             username = self.normalize_username(username)
-            user_roles = self._get_roles_from_saml_doc(signed_xml, saml_doc_etree)
+            user_roles = self._get_roles_from_saml_doc(signed_xml, saml_doc_etree) or []
 
             user_roles_result = self._check_role(user_roles)
             if not user_roles_result:
