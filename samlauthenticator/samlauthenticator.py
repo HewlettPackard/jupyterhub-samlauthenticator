@@ -297,7 +297,7 @@ class SAMLAuthenticator(Authenticator):
         '''
     )
     xpath_role_location = Unicode(
-        default_value='//saml:Role/text()',
+        default_value=None,
         allow_none=True,
         config=True,
         help='''
@@ -579,15 +579,19 @@ class SAMLAuthenticator(Authenticator):
         return None
 
     def _get_roles_from_saml_etree(self, signed_xml):
-        xpath_with_namespaces = self._make_xpath_builder()
-        xpath_fun = xpath_with_namespaces(self.xpath_role_location)
-        xpath_result = xpath_fun(signed_xml)
+        if self.xpath_role_location:
+            xpath_with_namespaces = self._make_xpath_builder()
+            xpath_fun = xpath_with_namespaces(self.xpath_role_location)
+            xpath_result = xpath_fun(signed_xml)
 
-        if xpath_result:
-            return xpath_result
+            if xpath_result:
+                return xpath_result
 
-        self.log.warning('Could not find role from role XPath')
-        return None
+            self.log.warning('Could not find role from role XPath')
+        else:
+            self.log.warning('Role XPath not set')
+
+        return []
 
     def _get_username_from_saml_doc(self, signed_xml, decoded_saml_doc):
         user_name = self._get_username_from_saml_etree(signed_xml)
@@ -655,7 +659,7 @@ class SAMLAuthenticator(Authenticator):
             self.log.debug('Authenticated user using SAML')
             username = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
             username = self.normalize_username(username)
-            user_roles = self._get_roles_from_saml_doc(signed_xml, saml_doc_etree) or []
+            user_roles = self._get_roles_from_saml_doc(signed_xml, saml_doc_etree)
 
             user_roles_result = self._check_role(user_roles)
             if not user_roles_result:
