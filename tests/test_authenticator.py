@@ -427,6 +427,79 @@ class TestGetUsername(unittest.TestCase):
         assert 'Bluedata' == a._get_username_from_saml_doc(tampered_assertion_etree, self.response_etree)
 
 
+class TestGetSingleRole(unittest.TestCase):
+    response_etree = etree.fromstring(test_constants.sample_response_xml_with_one_role)
+    verified_signed_xml = XMLVerifier().verify(response_etree, x509_cert=test_constants.x509_cert).signed_xml
+
+    def test_get_roles_from_saml_doc(self):
+        a = SAMLAuthenticator()
+        a.xpath_role_location = '//saml:AttributeStatement/saml:Attribute[@Name="Roles"]/saml:AttributeValue/text()'
+
+        assert ['Default'] == a._get_roles_from_saml_etree(self.verified_signed_xml)
+        assert ['Default'] == a._get_roles_from_saml_etree(self.response_etree)
+        assert ['Default'] == a._get_roles_from_saml_doc(self.verified_signed_xml, self.response_etree)
+
+        a.xpath_role_location = '//saml:AttributeStatement/saml:Attribute[@Name="Bad_Role_Location"]/saml:AttributeValue/text()'
+
+        assert a._get_roles_from_saml_etree(self.verified_signed_xml) == []
+        assert a._get_roles_from_saml_etree(self.response_etree) == []
+        assert a._get_roles_from_saml_doc(self.verified_signed_xml, self.response_etree) == []
+
+
+class TestGetManyRoles(unittest.TestCase):
+    response_etree = etree.fromstring(test_constants.sample_response_xml_with_many_roles)
+    verified_signed_xml = XMLVerifier().verify(response_etree, x509_cert=test_constants.x509_cert).signed_xml
+    sorted_roles = sorted(['Default', 'Role_1'])
+
+    def test_get_roles_from_saml_doc(self):
+        a = SAMLAuthenticator()
+        a.xpath_role_location = '//saml:AttributeStatement/saml:Attribute[@Name="Roles"]/saml:AttributeValue/text()'
+
+        assert self.sorted_roles == sorted(a._get_roles_from_saml_etree(self.verified_signed_xml))
+        assert self.sorted_roles == sorted(a._get_roles_from_saml_etree(self.response_etree))
+        assert self.sorted_roles == sorted(a._get_roles_from_saml_doc(self.verified_signed_xml, self.response_etree))
+
+
+class TestRoleAccess(unittest.TestCase):
+
+    def test_check_role(self):
+        a = SAMLAuthenticator()
+        a.allowed_roles = 'group1'
+
+        assert a._check_role(['group1'])
+
+    def test_check_roles(self):
+        a = SAMLAuthenticator()
+        a.allowed_roles='group1, group2, group3'
+
+        assert a._check_role(['group2'])
+        assert a._check_role(['group2', 'group3'])
+        assert a._check_role(['group1', 'nogroup1'])
+
+    def test_check_role_allow_all(self):
+        a = SAMLAuthenticator()
+
+        assert a._check_role([])
+        assert a._check_role(['group1'])
+        assert a._check_role(['group1', 'group2'])
+
+    def test_check_role_empty_allow_all(self):
+        a = SAMLAuthenticator()
+        a.allowed_roles=''
+
+        assert a._check_role([])
+        assert a._check_role(['group1'])
+        assert a._check_role(['group1', 'group2'])
+
+    def test_check_role_fails(self):
+        a = SAMLAuthenticator()
+        a.allowed_roles='group1,group2,group3'
+
+        assert not a._check_role([])
+        assert not a._check_role(['nogroup1'])
+        assert not a._check_role(['nogroup1', 'nogroup2'])
+
+
 class TestCreateUser(unittest.TestCase):
     @patch('samlauthenticator.samlauthenticator.subprocess')
     @patch('samlauthenticator.samlauthenticator.pwd')
@@ -621,6 +694,18 @@ class TestAuthenticate(unittest.TestCase):
         a = SAMLAuthenticator()
         a.metadata_content = test_constants.sample_metadata_xml
         assert a._authenticate(None, {a.login_post_field: test_constants.tampered_sample_response_encoded}) is None
+
+    def test_no_allowed_roles(self):
+        with patch('samlauthenticator.samlauthenticator.datetime') as mock_datetime:
+            mock_datetime.now.return_value = datetime(2020, 7, 1, 23, 0, 0, tzinfo=timezone.utc)
+            mock_datetime.strptime = datetime.strptime
+            a = SAMLAuthenticator()
+            a.metadata_content = test_constants.sample_metadata_xml
+            a.xpath_role_location = '//saml:AttributeStatement/saml:Attribute[@Name="Roles"]/saml:AttributeValue/text()'
+            # The included XML should not have either of these roles.
+            a.allowed_roles = 'allowed_role_1,allowed_role_2'
+            assert a._authenticate(None, {a.login_post_field: test_constants.b64encoded_response_xml_with_roles}) is None
+            mock_datetime.now.assert_called_once_with(timezone.utc)
 
     def test_add_user_fail(self):
         with patch('samlauthenticator.samlauthenticator.pwd') as mock_pwd, \
