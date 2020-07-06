@@ -217,7 +217,7 @@ class SAMLAuthenticator(Authenticator):
         config=True,
         help='''
         The nameId format to set in the Jupyter SAML Metadata.
-        Detaults to transient nameid-format, but other values such as
+        Defaults to transient nameid-format, but other values such as
         urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress or
         urn:oasis:names:tc:SAML:2.0:nameid-format:persistent
         are available. See section 8.3 of the spec
