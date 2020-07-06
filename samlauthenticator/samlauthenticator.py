@@ -314,7 +314,10 @@ class SAMLAuthenticator(Authenticator):
         Comma-separated list of roles. SAMLAuthenticator will restrict access to
         jupyterhub to these roles if specified.
         '''
-    ) 
+    )
+    _const_warn_explain       = 'Because no user would be allowed to log in via roles, role check disabled.'
+    _const_warn_no_role_xpath = 'Allowed roles set while role location XPath is not set.'
+    _const_warn_no_roles      = 'Allowed roles not set while role location XPath is set.'
 
     def _get_metadata_from_file(self):
         with open(self.metadata_filepath, 'r') as saml_metadata:
@@ -588,8 +591,6 @@ class SAMLAuthenticator(Authenticator):
                 return xpath_result
 
             self.log.warning('Could not find role from role XPath')
-        else:
-            self.log.warning('Role XPath not set')
 
         return []
 
@@ -626,18 +627,48 @@ class SAMLAuthenticator(Authenticator):
                 self.check_blacklist(username) and \
                 self.check_whitelist(username):
             if self.create_system_users:
-                return self._optional_user_add(username)
+                if self._optional_user_add(username):
+                    # Successfully added user
+                    return username
+                else:
+                    # Failed to add user
+                    self.log.error('Failed to add user by calling add user')
+                    return None
 
-            return True
+            # Didn't try to add user
+            return username
 
-        return False
+        # Failed to validate username or failed list check
+        self.log.error('Failed to validate username or failed list check')
+        return None
 
     def _check_role(self, user_roles):
-        if self.allowed_roles:
-            allowed_roles = [x.strip() for x in self.allowed_roles.split(',')]
+        allowed_roles = [x.strip() for x in self.allowed_roles.split(',')]
 
-            return any(elem in allowed_roles for elem in user_roles)
+        return any(elem in allowed_roles for elem in user_roles)
 
+    def _valid_roles_in_assertion(self, signed_xml, saml_doc_etree):
+        user_roles = self._get_roles_from_saml_doc(signed_xml, saml_doc_etree)
+
+        user_roles_result = self._check_role(user_roles)
+        if not user_roles_result:
+            self.log.error('User role not authorized')
+        return user_roles_result
+
+    def _valid_config_and_roles(self, signed_xml, saml_doc_etree):
+        if self.allowed_roles and self.xpath_role_location:
+            return self._valid_roles_in_assertion(signed_xml, saml_doc_etree)
+
+        if (not self.allowed_roles) and self.xpath_role_location:
+            self.log.warning(self._const_warn_no_roles)
+            self.log.warning(self._const_warn_explain)
+
+        if self.allowed_roles and (not self.xpath_role_location):
+            self.log.warning(self._const_warn_no_role_xpath)
+            self.log.warning(self._const_warn_explain)
+
+        # This technically skips the "neither set" case, but since that's expected-ish, I think we can let
+        # that slide.
         return True
 
     def _authenticate(self, handler, data):
@@ -659,19 +690,12 @@ class SAMLAuthenticator(Authenticator):
             self.log.debug('Authenticated user using SAML')
             username = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
             username = self.normalize_username(username)
-            user_roles = self._get_roles_from_saml_doc(signed_xml, saml_doc_etree)
 
-            user_roles_result = self._check_role(user_roles)
-            if not user_roles_result:
-                self.log.error('User role not authorized')
-                return None
+            if self._valid_config_and_roles(signed_xml, saml_doc_etree):
+                self.log.debug('Optionally create and return user: ' + username)
+                return self._check_username_and_add_user(username)
 
-            self.log.debug('Optionally create and return user: ' + username)
-            username_add_result = self._check_username_and_add_user(username)
-            if username_add_result:
-                return username
-
-            self.log.error('Failed to add user')
+            self.log.error('Assertion did not have appropriate roles')
             return None
 
         self.log.error('Error validating SAML response')

@@ -467,6 +467,7 @@ class TestRoleAccess(unittest.TestCase):
         a.allowed_roles = 'group1'
 
         assert a._check_role(['group1'])
+        assert a._check_role(['group1', 'group2'])
 
     def test_check_roles(self):
         a = SAMLAuthenticator()
@@ -476,21 +477,6 @@ class TestRoleAccess(unittest.TestCase):
         assert a._check_role(['group2', 'group3'])
         assert a._check_role(['group1', 'nogroup1'])
 
-    def test_check_role_allow_all(self):
-        a = SAMLAuthenticator()
-
-        assert a._check_role([])
-        assert a._check_role(['group1'])
-        assert a._check_role(['group1', 'group2'])
-
-    def test_check_role_empty_allow_all(self):
-        a = SAMLAuthenticator()
-        a.allowed_roles=''
-
-        assert a._check_role([])
-        assert a._check_role(['group1'])
-        assert a._check_role(['group1', 'group2'])
-
     def test_check_role_fails(self):
         a = SAMLAuthenticator()
         a.allowed_roles='group1,group2,group3'
@@ -498,6 +484,66 @@ class TestRoleAccess(unittest.TestCase):
         assert not a._check_role([])
         assert not a._check_role(['nogroup1'])
         assert not a._check_role(['nogroup1', 'nogroup2'])
+
+
+class TestValidRolesConfig(unittest.TestCase):
+
+    def test_no_xpath_no_roles_run_default(self):
+        a = SAMLAuthenticator()
+        a._valid_roles_in_assertion = unittest.mock.create_autospec(MagicMock(name='_valid_roles_in_assertion'))
+        a.log.warning = MagicMock(name='warning')
+
+        assert a._valid_config_and_roles(None, None)
+        a._valid_roles_in_assertion.assert_not_called()
+        a.log.warning.assert_not_called()
+
+    def test_xpath_roles_call_methods_true_return(self):
+        a = SAMLAuthenticator()
+        a._valid_roles_in_assertion = MagicMock(name='_valid_roles_in_assertion', return_value=True)
+        a.log.warning = MagicMock(name='warning')
+        a.allowed_roles = 'group1'
+        a.xpath_role_location = 'value'
+
+        assert a._valid_config_and_roles(None, None) == True
+        a._valid_roles_in_assertion.assert_called_once_with(None, None)
+        a.log.warning.assert_not_called()
+
+    def test_xpath_roles_call_methods_false_return(self):
+        a = SAMLAuthenticator()
+        a._valid_roles_in_assertion = MagicMock(name='_valid_roles_in_assertion', return_value=False)
+        a.log.warning = MagicMock(name='warning')
+        a.allowed_roles = 'group1'
+        a.xpath_role_location = 'value'
+
+        assert a._valid_config_and_roles(None, None) == False
+        a._valid_roles_in_assertion.assert_called_once_with(None, None)
+        a.log.warning.assert_not_called()
+
+    def test_xpath_no_roles(self):
+        a = SAMLAuthenticator()
+        a.xpath_role_location = 'value'
+        a._valid_roles_in_assertion = unittest.mock.create_autospec(MagicMock(name='_valid_roles_in_assertion'))
+        a.log.warning = MagicMock(name='warning')
+
+        assert a._valid_config_and_roles(None, None)
+        a._valid_roles_in_assertion.assert_not_called()
+        print(a.log.warning.call_args_list)
+        a.log.warning.assert_called()
+        a.log.warning.assert_any_call(a._const_warn_explain)
+        a.log.warning.assert_any_call(a._const_warn_no_roles)
+
+    def test_no_xpath_roles(self):
+        a = SAMLAuthenticator()
+        a.allowed_roles = 'value'
+        a._valid_roles_in_assertion = unittest.mock.create_autospec(MagicMock(name='_valid_roles_in_assertion'))
+        a.log.warning = MagicMock(name='warning')
+
+        assert a._valid_config_and_roles(None, None)
+        a._valid_roles_in_assertion.assert_not_called()
+        print(a.log.warning.call_args_list)
+        a.log.warning.assert_called()
+        a.log.warning.assert_any_call(a._const_warn_explain)
+        a.log.warning.assert_any_call(a._const_warn_no_role_xpath)
 
 
 class TestCreateUser(unittest.TestCase):
