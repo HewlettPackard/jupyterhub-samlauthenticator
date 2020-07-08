@@ -634,7 +634,7 @@ class SAMLAuthenticator(Authenticator):
             # say something like "if adding the user is successful, return username"
             return not subprocess.call([self.create_system_user_binary, username])
 
-    def _check_username_and_add_user(self, username: str) -> bool:
+    def _check_username_and_add_user(self, username: str) -> Optional[str]:
         if self.validate_username(username) and \
                 self.check_blacklist(username) and \
                 self.check_whitelist(username):
@@ -654,7 +654,7 @@ class SAMLAuthenticator(Authenticator):
         self.log.error('Failed to validate username or failed list check')
         return None
 
-    def _check_role(self, user_roles: str) -> bool:
+    def _check_role(self, user_roles: List[str]) -> bool:
         allowed_roles = [x.strip() for x in self.allowed_roles.split(',')]
 
         return any(elem in allowed_roles for elem in user_roles)
@@ -683,6 +683,30 @@ class SAMLAuthenticator(Authenticator):
         # that slide.
         return True
 
+    def _confirm_roles_create_user(self, signed_xml: Any, saml_doc_etree: Any, username: str) -> Optional[str]:
+        if self._valid_config_and_roles(signed_xml, saml_doc_etree):
+            self.log.debug('Optionally create and return user: ' + username)
+            return self._check_username_and_add_user(username)
+
+        self.log.error('Assertion did not have appropriate roles')
+        return None
+
+    def _get_username_confirm_roles_create_user(self, signed_xml: Any, saml_doc_etree: Any) -> Optional[str]:
+        self.log.debug('Authenticated user using SAML')
+        username = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
+
+        if username:
+            username = self.normalize_username(username)
+
+            if username:
+                return self._confirm_roles_create_user(signed_xml, saml_doc_etree, username)
+
+            self.log.error('Username must be truthy after normalization')
+            return None
+
+        self.log.error('Could not retrieve username from SAML response')
+        return None
+
     def _authenticate(self, handler: Any, data: Dict[str, str]) -> Optional[str]:
         saml_doc_etree = self._get_saml_doc_etree(data)
 
@@ -699,16 +723,7 @@ class SAMLAuthenticator(Authenticator):
         valid_saml_response, signed_xml = self._test_valid_saml_response(saml_metadata_etree, saml_doc_etree)
 
         if valid_saml_response:
-            self.log.debug('Authenticated user using SAML')
-            username = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
-            username = self.normalize_username(username)
-
-            if self._valid_config_and_roles(signed_xml, saml_doc_etree):
-                self.log.debug('Optionally create and return user: ' + username)
-                return self._check_username_and_add_user(username)
-
-            self.log.error('Assertion did not have appropriate roles')
-            return None
+            return self._get_username_confirm_roles_create_user(signed_xml, saml_doc_etree)
 
         self.log.error('Error validating SAML response')
         return None
