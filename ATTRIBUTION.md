@@ -33,3 +33,4 @@ OTHER DEALINGS IN THE SOFTWARE.
 * @killerwhile for jumping in and making some really neat additions
 * @duongnt for being very patient and checking the spelling in the code and in the docs
 * @jpobley for being willing to speak up about the software being broken
+* @0nebody for writing the role/group code
