@@ -45,6 +45,7 @@ from signxml import XMLVerifier
 
 # Imports for typing
 from typing import List, Tuple, Any, Dict, Callable, Optional
+from jupyterhub.user import User
 
 class SAMLAuthenticator(Authenticator):
     metadata_filepath = Unicode(
@@ -732,7 +733,7 @@ class SAMLAuthenticator(Authenticator):
     def authenticate(self, handler: Any, data: Dict[str, str]):
         return self._authenticate(handler, data)
 
-    def _get_redirect_from_metadata_and_redirect(authenticator_self, element_name, handler_self):
+    def _get_redirect_from_metadata_and_redirect(authenticator_self, element_name: str, handler_self: BaseHandler):
         saml_metadata_etree = authenticator_self._get_saml_metadata_etree()
 
         handler_self.log.debug('Got metadata etree')
@@ -755,7 +756,7 @@ class SAMLAuthenticator(Authenticator):
         # by the user's browser.
         handler_self.redirect(redirect_link_getter(saml_metadata_etree)[0], permanent=False)
 
-    def _make_org_metadata(self):
+    def _make_org_metadata(self) -> str:
         if self.organization_name or \
                 self.organization_display_name or \
                 self.organization_url:
@@ -790,7 +791,7 @@ class SAMLAuthenticator(Authenticator):
 
         return ''
 
-    def _make_sp_metadata(authenticator_self, meta_handler_self):
+    def _make_sp_metadata(authenticator_self, meta_handler_self: BaseHandler):
         metadata_text = '''<?xml version="1.0"?>
 <EntityDescriptor
         entityID="{{ entityId }}"
@@ -837,7 +838,7 @@ class SAMLAuthenticator(Authenticator):
         class SAMLLogoutHandler(LogoutHandler):
             # TODO: When the time is right to force users onto JupyterHub 1.0.0,
             # refactor this.
-            async def _shutdown_servers(self, user):
+            async def _shutdown_servers(self, user: User):
                 active_servers = [
                     name
                     for (name, spawner) in user.spawners.items()
