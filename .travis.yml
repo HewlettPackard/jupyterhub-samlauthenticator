@@ -14,7 +14,7 @@ install:
 
 script:
   - pytest --cov=samlauthenticator --cov-report term-missing
-  - mypy samlauthenticator/samlauthenticator.py --ignore-missing-imports
+  - mypy --config-file=./mypy.ini samlauthenticator/samlauthenticator.py
 
 after_success:
   - codecov

@@ -323,18 +323,18 @@ class SAMLAuthenticator(Authenticator):
     _const_warn_no_role_xpath = 'Allowed roles set while role location XPath is not set.'
     _const_warn_no_roles      = 'Allowed roles not set while role location XPath is set.'
 
-    def _get_metadata_from_file(self) -> str:
+    def _get_metadata_from_file(self: Authenticator) -> str:
         with open(self.metadata_filepath, 'r') as saml_metadata:
             return saml_metadata.read()
 
-    def _get_metadata_from_config(self) -> str:
+    def _get_metadata_from_config(self: Authenticator) -> str:
         return self.metadata_content
 
-    def _get_metadata_from_url(self) -> str:
+    def _get_metadata_from_url(self: Authenticator) -> str:
         with urlopen(self.metadata_url) as remote_metadata:
             return remote_metadata.read()
 
-    def _get_preferred_metadata_from_source(self) -> Optional[str]:
+    def _get_preferred_metadata_from_source(self: Authenticator) -> Optional[str]:
         if self.metadata_filepath:
             return self._get_metadata_from_file()
 
@@ -346,14 +346,14 @@ class SAMLAuthenticator(Authenticator):
 
         return None
 
-    def _log_exception_error(self, exception: BaseException):
+    def _log_exception_error(self: Authenticator, exception: BaseException):
         self.log.warning('Exception: %s', str(exception))
 
     # Because the return type of etree.fromstring/1 is unclear, I'm going to use `Any`
     # as the type of etrees in this iteration of typing the Authenticator.
     # TODO: Figure out what the actual type of etrees in python is, and update the code
     #       with those types.
-    def _get_saml_doc_etree(self, data: Dict[str, str]) -> Optional[Any]:
+    def _get_saml_doc_etree(self: Authenticator, data: Dict[str, str]) -> Optional[Any]:
         saml_response = data.get(self.login_post_field, None)
 
         if not saml_response:
@@ -382,7 +382,7 @@ class SAMLAuthenticator(Authenticator):
             self._log_exception_error(e)
             return None
 
-    def _get_saml_metadata_etree(self) -> Optional[Any]:
+    def _get_saml_metadata_etree(self: Authenticator) -> Optional[Any]:
         try:
             saml_metadata = self._get_preferred_metadata_from_source()
         except Exception as e:
@@ -416,7 +416,7 @@ class SAMLAuthenticator(Authenticator):
     # in this iteration of typing the Authenticator.
     # TODO: Figure out what the actual type of signed_xml in python is, and update the code
     #       with those types.
-    def _verify_saml_signature(self, saml_metadata: Any, decoded_saml_doc: Any) -> Optional[Any]:
+    def _verify_saml_signature(self: Authenticator, saml_metadata: Any, decoded_saml_doc: Any) -> Optional[Any]:
         xpath_with_namespaces = self._make_xpath_builder()
         find_cert = xpath_with_namespaces('//ds:KeyInfo/ds:X509Data/ds:X509Certificate/text()')
         cert_value = None
@@ -438,7 +438,7 @@ class SAMLAuthenticator(Authenticator):
         return signed_xml
 
     # Again, not totally clear what a lot of the lxml stuff is typed as. Going with `Any`.
-    def _make_xpath_builder(self) -> Callable[[str], Any]:
+    def _make_xpath_builder(self: Authenticator) -> Callable[[str], Any]:
         namespaces = {
             'ds'   : 'http://www.w3.org/2000/09/xmldsig#',
             'md'   : 'urn:oasis:names:tc:SAML:2.0:metadata',
@@ -451,7 +451,7 @@ class SAMLAuthenticator(Authenticator):
 
         return xpath_with_namespaces
 
-    def _verify_saml_response_against_metadata(self, saml_metadata: Any, signed_xml: Any) -> bool:
+    def _verify_saml_response_against_metadata(self: Authenticator, saml_metadata: Any, signed_xml: Any) -> bool:
         xpath_with_namespaces = self._make_xpath_builder()
 
         find_entity_id = xpath_with_namespaces('//saml:Issuer/text()')
@@ -476,7 +476,7 @@ class SAMLAuthenticator(Authenticator):
 
         return True
 
-    def _verify_saml_response_against_configured_fields(self, signed_xml: Any) -> bool:
+    def _verify_saml_response_against_configured_fields(self: Authenticator, signed_xml: Any) -> bool:
         xpath_with_namespaces = self._make_xpath_builder()
 
         if self.audience:
@@ -507,11 +507,11 @@ class SAMLAuthenticator(Authenticator):
 
         return True
 
-    def _is_date_aware(self, created_datetime: Any) -> bool:
+    def _is_date_aware(self: Authenticator, created_datetime: Any) -> bool:
         return created_datetime.tzinfo is not None and \
             created_datetime.tzinfo.utcoffset(created_datetime) is not None
 
-    def _verify_physical_constraints(self, signed_xml: Any) -> bool:
+    def _verify_physical_constraints(self: Authenticator, signed_xml: Any) -> bool:
         xpath_with_namespaces = self._make_xpath_builder()
 
         find_not_before = xpath_with_namespaces('//saml:Conditions/@NotBefore')
@@ -555,7 +555,7 @@ class SAMLAuthenticator(Authenticator):
 
         return True
 
-    def _verify_saml_response_fields(self, saml_metadata: Any, signed_xml: Any) -> bool:
+    def _verify_saml_response_fields(self: Authenticator, saml_metadata: Any, signed_xml: Any) -> bool:
         if not self._verify_saml_response_against_metadata(saml_metadata, signed_xml):
             self.log.warning('The SAML Assertion did not match the provided metadata')
             return False
@@ -571,7 +571,7 @@ class SAMLAuthenticator(Authenticator):
         self.log.info('The SAML Assertion matched the configured values')
         return True
 
-    def _test_valid_saml_response(self, saml_metadata: Any, saml_doc: Any) -> Tuple[bool, Optional[Any]]:
+    def _test_valid_saml_response(self: Authenticator, saml_metadata: Any, saml_doc: Any) -> Tuple[bool, Optional[Any]]:
         signed_xml = self._verify_saml_signature(saml_metadata, saml_doc)
 
         if signed_xml is None or len(signed_xml) == 0:
@@ -580,7 +580,7 @@ class SAMLAuthenticator(Authenticator):
 
         return self._verify_saml_response_fields(saml_metadata, signed_xml), signed_xml
 
-    def _get_username_from_saml_etree(self, signed_xml: Any) -> Optional[str]:
+    def _get_username_from_saml_etree(self: Authenticator, signed_xml: Any) -> Optional[str]:
         xpath_with_namespaces = self._make_xpath_builder()
 
         xpath_fun = xpath_with_namespaces(self.xpath_username_location)
@@ -594,7 +594,7 @@ class SAMLAuthenticator(Authenticator):
         self.log.warning('Could not find name from name XPath')
         return None
 
-    def _get_roles_from_saml_etree(self, signed_xml: Any) -> List[str]:
+    def _get_roles_from_saml_etree(self: Authenticator, signed_xml: Any) -> List[str]:
         if self.xpath_role_location:
             xpath_with_namespaces = self._make_xpath_builder()
             xpath_fun = xpath_with_namespaces(self.xpath_role_location)
@@ -607,7 +607,7 @@ class SAMLAuthenticator(Authenticator):
 
         return []
 
-    def _get_username_from_saml_doc(self, signed_xml: Any, decoded_saml_doc: Any) -> Optional[str]:
+    def _get_username_from_saml_doc(self: Authenticator, signed_xml: Any, decoded_saml_doc: Any) -> Optional[str]:
         user_name = self._get_username_from_saml_etree(signed_xml)
         if user_name:
             return user_name
@@ -616,7 +616,7 @@ class SAMLAuthenticator(Authenticator):
 
         return self._get_username_from_saml_etree(decoded_saml_doc)
 
-    def _get_roles_from_saml_doc(self, signed_xml: Any, decoded_saml_doc: Any) -> List[str]:
+    def _get_roles_from_saml_doc(self: Authenticator, signed_xml: Any, decoded_saml_doc: Any) -> List[str]:
         user_roles = self._get_roles_from_saml_etree(signed_xml)
         if user_roles:
             return user_roles
@@ -625,7 +625,7 @@ class SAMLAuthenticator(Authenticator):
 
         return self._get_roles_from_saml_etree(decoded_saml_doc)
 
-    def _optional_user_add(self, username: str) -> bool:
+    def _optional_user_add(self: Authenticator, username: str) -> bool:
         try:
             pwd.getpwnam(username)
             # Found the user, we don't need to create them
@@ -635,7 +635,7 @@ class SAMLAuthenticator(Authenticator):
             # say something like "if adding the user is successful, return username"
             return not subprocess.call([self.create_system_user_binary, username])
 
-    def _check_username_and_add_user(self, username: str) -> Optional[str]:
+    def _check_username_and_add_user(self: Authenticator, username: str) -> Optional[str]:
         if self.validate_username(username) and \
                 self.check_blacklist(username) and \
                 self.check_whitelist(username):
@@ -655,12 +655,12 @@ class SAMLAuthenticator(Authenticator):
         self.log.error('Failed to validate username or failed list check')
         return None
 
-    def _check_role(self, user_roles: List[str]) -> bool:
+    def _check_role(self: Authenticator, user_roles: List[str]) -> bool:
         allowed_roles = [x.strip() for x in self.allowed_roles.split(',')]
 
         return any(elem in allowed_roles for elem in user_roles)
 
-    def _valid_roles_in_assertion(self, signed_xml: Any, saml_doc_etree: Any) -> bool:
+    def _valid_roles_in_assertion(self: Authenticator, signed_xml: Any, saml_doc_etree: Any) -> bool:
         user_roles = self._get_roles_from_saml_doc(signed_xml, saml_doc_etree)
 
         user_roles_result = self._check_role(user_roles)
@@ -668,7 +668,7 @@ class SAMLAuthenticator(Authenticator):
             self.log.error('User role not authorized')
         return user_roles_result
 
-    def _valid_config_and_roles(self, signed_xml: Any, saml_doc_etree: Any) -> bool:
+    def _valid_config_and_roles(self: Authenticator, signed_xml: Any, saml_doc_etree: Any) -> bool:
         if self.allowed_roles and self.xpath_role_location:
             return self._valid_roles_in_assertion(signed_xml, saml_doc_etree)
 
@@ -684,7 +684,7 @@ class SAMLAuthenticator(Authenticator):
         # that slide.
         return True
 
-    def _confirm_roles_create_user(self, signed_xml: Any, saml_doc_etree: Any, username: str) -> Optional[str]:
+    def _confirm_roles_create_user(self: Authenticator, signed_xml: Any, saml_doc_etree: Any, username: str) -> Optional[str]:
         if self._valid_config_and_roles(signed_xml, saml_doc_etree):
             self.log.debug('Optionally create and return user: ' + username)
             return self._check_username_and_add_user(username)
@@ -692,7 +692,7 @@ class SAMLAuthenticator(Authenticator):
         self.log.error('Assertion did not have appropriate roles')
         return None
 
-    def _get_username_confirm_roles_create_user(self, signed_xml: Any, saml_doc_etree: Any) -> Optional[str]:
+    def _get_username_confirm_roles_create_user(self: Authenticator, signed_xml: Any, saml_doc_etree: Any) -> Optional[str]:
         self.log.debug('Authenticated user using SAML')
         username = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
 
@@ -708,7 +708,7 @@ class SAMLAuthenticator(Authenticator):
         self.log.error('Could not retrieve username from SAML response')
         return None
 
-    def _authenticate(self, handler: Any, data: Dict[str, str]) -> Optional[str]:
+    def _authenticate(self: Authenticator, handler: Any, data: Dict[str, str]) -> Optional[str]:
         saml_doc_etree = self._get_saml_doc_etree(data)
 
         if saml_doc_etree is None or len(saml_doc_etree) == 0:
@@ -730,10 +730,10 @@ class SAMLAuthenticator(Authenticator):
         return None
 
     @gen.coroutine
-    def authenticate(self, handler: Any, data: Dict[str, str]):
+    def authenticate(self: Authenticator, handler: Any, data: Dict[str, str]):
         return self._authenticate(handler, data)
 
-    def _get_redirect_from_metadata_and_redirect(authenticator_self, element_name: str, handler_self: BaseHandler):
+    def _get_redirect_from_metadata_and_redirect(authenticator_self: Authenticator, element_name: str, handler_self: BaseHandler):
         saml_metadata_etree = authenticator_self._get_saml_metadata_etree()
 
         handler_self.log.debug('Got metadata etree')
@@ -756,7 +756,7 @@ class SAMLAuthenticator(Authenticator):
         # by the user's browser.
         handler_self.redirect(redirect_link_getter(saml_metadata_etree)[0], permanent=False)
 
-    def _make_org_metadata(self) -> str:
+    def _make_org_metadata(self: Authenticator) -> str:
         if self.organization_name or \
                 self.organization_display_name or \
                 self.organization_url:
@@ -791,7 +791,7 @@ class SAMLAuthenticator(Authenticator):
 
         return ''
 
-    def _make_sp_metadata(authenticator_self, meta_handler_self: BaseHandler) -> str:
+    def _make_sp_metadata(authenticator_self: Authenticator, meta_handler_self: BaseHandler) -> str:
         metadata_text = '''<?xml version="1.0"?>
 <EntityDescriptor
         entityID="{{ entityId }}"
@@ -826,11 +826,11 @@ class SAMLAuthenticator(Authenticator):
                                    entityLocation=acs_endpoint_url,
                                    organizationMetadata=org_metadata_elem)
 
-    def get_handlers(authenticator_self, app: Any) -> List[Tuple[str, BaseHandler]]:
+    def get_handlers(authenticator_self: Authenticator, app: Any) -> List[Tuple[str, BaseHandler]]:
 
         class SAMLLoginHandler(LoginHandler):
 
-            async def get(login_handler_self):
+            async def get(login_handler_self: LoginHandler):
                 login_handler_self.log.info('Starting SP-initiated SAML Login')
                 authenticator_self._get_redirect_from_metadata_and_redirect('md:SingleSignOnService',
                                                                             login_handler_self)
@@ -838,7 +838,7 @@ class SAMLAuthenticator(Authenticator):
         class SAMLLogoutHandler(LogoutHandler):
             # TODO: When the time is right to force users onto JupyterHub 1.0.0,
             # refactor this.
-            async def _shutdown_servers(self, user: User):
+            async def _shutdown_servers(self: LogoutHandler, user: User):
                 active_servers = [
                     name
                     for (name, spawner) in user.spawners.items()
@@ -851,17 +851,17 @@ class SAMLAuthenticator(Authenticator):
                         futures.append(maybe_future(self.stop_single_user(user, server_name)))
                     await asyncio.gather(*futures)
 
-            def _backend_logout_cleanup(self, name: str):
+            def _backend_logout_cleanup(self: LogoutHandler, name: str):
                 self.log.info("User logged out: %s", name)
                 self.clear_login_cookie()
                 self.statsd.incr('logout')
 
-            async def _shutdown_servers_and_backend_cleanup(self):
+            async def _shutdown_servers_and_backend_cleanup(self: LogoutHandler):
                 user = self.current_user
                 if user:
                     await self._shutdown_servers(user)
 
-            async def get(logout_handler_self):
+            async def get(logout_handler_self: LogoutHandler):
                 if authenticator_self.shutdown_on_logout:
                     logout_handler_self.log.debug('Shutting down servers during SAML Logout')
                     await logout_handler_self._shutdown_servers_and_backend_cleanup()
@@ -884,7 +884,7 @@ class SAMLAuthenticator(Authenticator):
 
         class SAMLMetaHandler(BaseHandler):
 
-            async def get(meta_handler_self):
+            async def get(meta_handler_self: BaseHandler):
                 xml_content = authenticator_self._make_sp_metadata(meta_handler_self)
                 meta_handler_self.set_header('Content-Type', 'text/xml')
                 meta_handler_self.write(xml_content)
