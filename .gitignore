@@ -10,3 +10,6 @@ dist/
 
 # IDE settings
 .vscode
+
+# Typechecking cache
+.mypy_cache/
