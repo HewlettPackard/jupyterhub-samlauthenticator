@@ -382,7 +382,7 @@ class SAMLAuthenticator(Authenticator):
             self._log_exception_error(e)
             return None
 
-    def _get_saml_metadata_etree(self):
+    def _get_saml_metadata_etree(self) -> Optional[Any]:
         try:
             saml_metadata = self._get_preferred_metadata_from_source()
         except Exception as e:
@@ -791,7 +791,7 @@ class SAMLAuthenticator(Authenticator):
 
         return ''
 
-    def _make_sp_metadata(authenticator_self, meta_handler_self: BaseHandler):
+    def _make_sp_metadata(authenticator_self, meta_handler_self: BaseHandler) -> str:
         metadata_text = '''<?xml version="1.0"?>
 <EntityDescriptor
         entityID="{{ entityId }}"
