@@ -1,5 +1,5 @@
 language: python
-sudo: false
+os: linux
 cache:
   - pip
 
@@ -18,9 +18,15 @@ script:
 after_success:
   - codecov
 
-matrix:
+jobs:
   fast_finish: true
   include:
+  - name: "Python 3.9 Oldest Dependencies"
+    python: "3.9"
+    env: DEPS_VERSION=AFTER38
+  - name: "Python 3.9 Latest Dependencies"
+    python: "3.9"
+    env: DEPS_VERSION=NEW
   - name: "Python 3.8 Oldest Dependencies"
     python: "3.8"
     env: DEPS_VERSION=AFTER38

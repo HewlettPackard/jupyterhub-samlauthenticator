@@ -622,10 +622,24 @@ class SAMLAuthenticator(Authenticator):
             # say something like "if adding the user is successful, return username"
             return not subprocess.call([self.create_system_user_binary, username])
 
+    # JH did a clumsy job of renaming (white|black)list -> (allowed|blocked)_users,
+    # so it falls on me to paper over their mistakes.
+    def _check_blocked_users(self, username):
+        try:
+            return self.check_blacklist(username)
+        except DeprecationWarning:
+            return self.check_blocked_users(username)
+
+    def _check_allowed_users(self, username):
+        try:
+            return self.check_whitelist(username)
+        except DeprecationWarning:
+            return self.check_allowed_users(username)
+
     def _check_username_and_add_user(self, username):
         if self.validate_username(username) and \
-                self.check_blacklist(username) and \
-                self.check_whitelist(username):
+                self._check_blocked_users(username) and \
+                self._check_allowed_users(username):
             if self.create_system_users:
                 if self._optional_user_add(username):
                     # Successfully added user
