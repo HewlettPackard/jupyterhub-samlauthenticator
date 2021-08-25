@@ -674,7 +674,13 @@ class TestAuthenticate(unittest.TestCase):
         a = SAMLAuthenticator()
         a.metadata_content = saml_data.metadata_xml
 
-        assert 'tom' == a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response})
+        user_tom = {
+            'name': 'tom',
+            'auth_state': {
+                'roles': []
+            }
+        }
+        assert user_tom == a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response})
         mock_datetime.now.assert_called_once_with(timezone.utc)
         mock_pwd.getpwnam.assert_called_once_with('tom')
 

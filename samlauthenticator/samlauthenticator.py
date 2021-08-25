@@ -686,20 +686,31 @@ class SAMLAuthenticator(Authenticator):
 
         valid_saml_response, signed_xml = self._test_valid_saml_response(saml_metadata_etree, saml_doc_etree)
 
-        if valid_saml_response:
-            self.log.debug('Authenticated user using SAML')
-            username = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
-            username = self.normalize_username(username)
+        if not valid_saml_response:
+            self.log.error('Error validating SAML response')
+            return None
 
-            if self._valid_config_and_roles(signed_xml, saml_doc_etree):
-                self.log.debug('Optionally create and return user: ' + username)
-                return self._check_username_and_add_user(username)
+        valid_config_and_roles = self._valid_config_and_roles(signed_xml, saml_doc_etree)
 
+        if not valid_config_and_roles:
             self.log.error('Assertion did not have appropriate roles')
             return None
 
-        self.log.error('Error validating SAML response')
-        return None
+        self.log.debug('Authenticated user using SAML')
+        username = self._get_username_from_saml_doc(signed_xml, saml_doc_etree)
+        username = self.normalize_username(username)
+        user_roles = self._get_roles_from_saml_doc(signed_xml, saml_doc_etree)
+
+        self.log.debug('Optionally create and return user: ' + username)
+        if self._check_username_and_add_user(username):
+            return {
+                'name': username,
+                'auth_state': {
+                    'roles': user_roles
+                }
+            }
+        else:
+            return None
 
     @gen.coroutine
     def authenticate(self, handler, data):
