@@ -94,7 +94,7 @@ The default nameid format that the SAMLAuthenticator expects is defined by the S
 
 If the server administrator wants to create local users for each JupyterHub user but doesn't want to use the `useradd` utility, a user can be added with any binary on the host system Set the `create_system_user_binary` field to either a) a full path to the binary or b) the name of a binary on the host's path. Please note, if the binary exits with code 0, the Authenticator will assume that the user add succeeded, and if the binary exits with any code _other than 0_, it will be assumed that creating the user failed.
 
-Access is given to all users who successfully authenticate regardless of their role or group membership by default. Set the `roles` field to restrict access to JupyterHub to specific roles. Users with any of the specified roles will be authorized to access JupyterHub. The `xpath_role_location` field can be configured to set the location of the users roles in the SAML response.
+Access is given to all users who successfully authenticate regardless of their role or group membership by default. Set the `roles` field to restrict access to JupyterHub to specific roles. Users with any of the specified roles will be authorized to access JupyterHub. The `xpath_role_location` field can be configured to set the location of the users roles in the SAML response. If the `admin_roles` field is set administrator access will be granted to members of the specified roles. Leave this unset if you want to manage administrators with JupyterHub configuration.
 
 #### Example Configurations
 
@@ -124,6 +124,10 @@ c.SAMLAuthenticator.xpath_role_location = '//saml:Attribute[@Name="Roles"]/saml:
 
 # Comma-separated list of authorized roles. Allows all if not specified.
 c.SAMLAuthenticator.roles = 'group1,group2'
+
+# Comma-separated list of admin roles. Overrides any other admin configuration.
+# Admin privileges does not grant login.
+c.SAMLAuthenticator.admin_roles = 'admin-group1,admin-group2'
 
 # The IdP is sending the SAML Response in a field named 'R'
 c.SAMLAuthenticator.login_post_field = 'R'

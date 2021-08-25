@@ -315,6 +315,15 @@ class SAMLAuthenticator(Authenticator):
         jupyterhub to these roles if specified.
         '''
     )
+    admin_roles = Unicode(
+        default_value=None,
+        allow_none=True,
+        config=True,
+        help='''
+        Comma-separated list of admin roles. Users matching this role will be
+        be a jupyterhub administrator.
+        '''
+    )
     _const_warn_explain       = 'Because no user would be allowed to log in via roles, role check disabled.'
     _const_warn_no_role_xpath = 'Allowed roles set while role location XPath is not set.'
     _const_warn_no_roles      = 'Allowed roles not set while role location XPath is set.'
@@ -647,6 +656,11 @@ class SAMLAuthenticator(Authenticator):
 
         return any(elem in allowed_roles for elem in user_roles)
 
+    def _check_admin_role(self, user_roles):
+        admin_roles = [x.strip() for x in self.admin_roles.split(',')]
+
+        return any(elem in admin_roles for elem in user_roles)
+
     def _valid_roles_in_assertion(self, signed_xml, saml_doc_etree):
         user_roles = self._get_roles_from_saml_doc(signed_xml, saml_doc_etree)
 
@@ -703,12 +717,19 @@ class SAMLAuthenticator(Authenticator):
 
         self.log.debug('Optionally create and return user: ' + username)
         if self._check_username_and_add_user(username):
-            return {
+            user_details = {
                 'name': username,
                 'auth_state': {
                     'roles': user_roles
                 }
             }
+
+            if self.admin_roles:
+                is_admin = self._check_admin_role(user_roles)
+                self.log.debug('Admin roles defined. Setting admin status to ' + str(is_admin))
+                user_details['admin'] = is_admin
+
+            return user_details
         else:
             return None
 
