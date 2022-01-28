@@ -725,19 +725,18 @@ class SAMLAuthenticator(Authenticator):
         handler_self.log.debug('Final xpath is: ' + final_xpath)
 
         redirect_link_getter = xpath_with_namespaces(final_xpath)
+        sso_login_url = redirect_link_getter(saml_metadata_etree)[0]
 
+        # AWS SSO does not require a signed request so this is fairly simple. 
         saml_request=quote_plus(b64encode(zlib.compress(f"""
-        <samlp:AuthnRequest ID="0" Version="2.0" IssueInstant="{datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')}" Destination="https://portal.sso.eu-west-2.amazonaws.com/saml/assertion/NjMxMDEzMTQzODk3X2lucy0xNGM0MGNkNmM2ZDgxNGZm" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="http://localhost:8000/hub/login" ProviderName="" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">
-        <saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">http://localhost:8000/hub</saml:Issuer>
+        <samlp:AuthnRequest ID="0" Version="2.0" IssueInstant="{datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')}" Destination="{sso_login_url}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{authenticator_self.acs_endpoint_url}" ProviderName="" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">
+        <saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">{authenticator_self.audience}</saml:Issuer>
         <samlp:NameIDPolicy Format="urn:oasis:names:tc:SAML:2.0:nameid-format:transient" AllowCreate="true"/>
         </samlp:AuthnRequest>""".encode('utf8'))[2:-4]))
 
-        # see https://developers.onelogin.com/saml/examples/authnrequest
-        #     https://stackoverflow.com/questions/30388926/http-redirect-binding-saml-request
-
         # Here permanent MUST BE False - otherwise the /hub/logout GET will not be fired
         # by the user's browser.
-        handler_self.redirect(f"{redirect_link_getter(saml_metadata_etree)[0]}?SAMLRequest={saml_request}", permanent=False)
+        handler_self.redirect(f"{sso_login_url}?SAMLRequest={saml_request}", permanent=False)
 
     def _make_org_metadata(self):
         if self.organization_name or \
