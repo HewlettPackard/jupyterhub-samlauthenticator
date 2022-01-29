@@ -723,7 +723,7 @@ class SAMLAuthenticator(Authenticator):
         binding = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'
         final_xpath = '//' + element_name + '[@Binding=\'' + binding + '\']/@Location'
         handler_self.log.debug('Final xpath is: ' + final_xpath)
-        
+
         redirect_link_getter = xpath_with_namespaces(final_xpath)
 
         return redirect_link_getter(saml_metadata_etree)[0]
@@ -846,10 +846,11 @@ class SAMLAuthenticator(Authenticator):
 
             async def get(login_handler_self):
                 login_handler_self.log.info('Starting SP-initiated SAML Login')
-                authenticator_self._get_redirect_from_metadata_and_redirect('md:SingleSignOnService',
-                                                                            login_handler_self,
-                                                                            add_authn_request=True
-                                                                            )
+                authenticator_self._get_redirect_from_metadata_and_redirect(
+                    'md:SingleSignOnService',
+                    login_handler_self,
+                    add_authn_request=True
+                )
 
         class SAMLLogoutHandler(LogoutHandler):
             # TODO: When the time is right to force users onto JupyterHub 1.0.0,
@@ -892,10 +893,11 @@ class SAMLAuthenticator(Authenticator):
                 forward_on_logout = True if authenticator_self.slo_forward_on_logout else False
                 forwad_on_logout = True if authenticator_self.slo_forwad_on_logout else False
                 if forward_on_logout or forwad_on_logout:
-                    authenticator_self._get_redirect_from_metadata_and_redirect('md:SingleLogoutService',
-                                                                                logout_handler_self,
-                                                                                add_authn_request=False
-                                                                                )
+                    authenticator_self._get_redirect_from_metadata_and_redirect(
+                        'md:SingleLogoutService',
+                        logout_handler_self,
+                        add_authn_request=False
+                    )
                 else:
                     html = logout_handler_self.render_template('logout.html')
                     logout_handler_self.finish(html)
