@@ -719,15 +719,14 @@ class SAMLAuthenticator(Authenticator):
         handler_self.log.debug('Got valid metadata etree')
 
         xpath_with_namespaces = authenticator_self._make_xpath_builder()
+
         binding = 'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect'
         final_xpath = '//' + element_name + '[@Binding=\'' + binding + '\']/@Location'
-
         handler_self.log.debug('Final xpath is: ' + final_xpath)
         
         redirect_link_getter = xpath_with_namespaces(final_xpath)
-        sso_login_url = redirect_link_getter(saml_metadata_etree)[0]
-        
-        return sso_login_url
+
+        return redirect_link_getter(saml_metadata_etree)[0]
 
     def _get_redirect_from_metadata_and_redirect(authenticator_self, element_name, handler_self, add_authn_request=False):
 
@@ -735,7 +734,6 @@ class SAMLAuthenticator(Authenticator):
 
         # Here permanent MUST BE False - otherwise the /hub/logout GET will not be fired
         # by the user's browser.
-
         if add_authn_request:
             authn_requst = quote_plus(b64encode(zlib.compress(
                 authenticator_self._make_authn_request(element_name, handler_self).encode('utf8')
