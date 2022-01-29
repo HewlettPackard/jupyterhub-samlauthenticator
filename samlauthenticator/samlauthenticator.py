@@ -731,7 +731,6 @@ class SAMLAuthenticator(Authenticator):
         saml_request=quote_plus(b64encode(zlib.compress(f"""
         <samlp:AuthnRequest ID="0" Version="2.0" IssueInstant="{datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')}" Destination="{sso_login_url}" ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" AssertionConsumerServiceURL="{authenticator_self.acs_endpoint_url}" ProviderName="" xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">
         <saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">{authenticator_self.audience}</saml:Issuer>
-        <samlp:NameIDPolicy Format="urn:oasis:names:tc:SAML:2.0:nameid-format:transient" AllowCreate="true"/>
         </samlp:AuthnRequest>""".encode('utf8'))[2:-4]))
 
         # Here permanent MUST BE False - otherwise the /hub/logout GET will not be fired
