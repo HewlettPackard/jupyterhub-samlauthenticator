@@ -852,6 +852,7 @@ class SAMLAuthenticator(Authenticator):
                                                                                 logout_handler_self)
                 else:
                     html = logout_handler_self.render_template('logout.html')
+                    html = logout_handler_self.render_template('logout.html', sync=True)
                     logout_handler_self.finish(html)
 
         class SAMLMetaHandler(BaseHandler):
