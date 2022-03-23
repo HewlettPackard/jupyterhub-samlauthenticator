@@ -768,6 +768,42 @@ class TestAuthenticate(unittest.TestCase):
             mock_datetime.now.assert_called_once_with(timezone.utc)
             mock_subprocess.call.assert_called_once_with(['useradd', 'bluedata'])
 
+    def test_get_username_fail(self):
+        # Let's use a trivial example for breaking things.
+        saml_data = test_constants.metadata_encoded_xml_dict['low_strength_cert']['SHA-1']
+        with patch('samlauthenticator.samlauthenticator.datetime') as mock_datetime:
+
+                mock_datetime.now.return_value = saml_data.datetime_stamp
+                mock_datetime.strptime = datetime.strptime
+                a = SAMLAuthenticator()
+                a.metadata_content = saml_data.metadata_xml
+                a.normalize_username = MagicMock()
+                a.xpath_username_location = '//saml:Invalid/saml:Username/saml:Path/text()'
+
+                assert a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response}) is None
+                mock_datetime.now.assert_called_once_with(timezone.utc)
+                a.normalize_username.assert_not_called()
+
+    def test_normalize_username_fail(self):
+        # Let's use a trivial example for breaking things.
+        saml_data = test_constants.metadata_encoded_xml_dict['low_strength_cert']['SHA-1']
+        with patch('samlauthenticator.samlauthenticator.datetime') as mock_datetime:
+
+                mock_datetime.now.return_value = saml_data.datetime_stamp
+                mock_datetime.strptime = datetime.strptime
+                a = SAMLAuthenticator()
+                a.metadata_content = saml_data.metadata_xml
+                a._check_username_and_add_user = MagicMock()
+
+                def bad_normalize(username):
+                    return None
+
+                a.normalize_username = bad_normalize
+
+                assert a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response}) is None
+                mock_datetime.now.assert_called_once_with(timezone.utc)
+                a._check_username_and_add_user.assert_not_called()
+
 
 class TestGetRedirect(unittest.TestCase):
 
