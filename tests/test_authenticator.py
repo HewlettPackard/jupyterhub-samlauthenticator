@@ -486,6 +486,31 @@ class TestRoleAccess(unittest.TestCase):
         assert not a._check_role(['nogroup1', 'nogroup2'])
 
 
+class TestAdminRoleAccess(unittest.TestCase):
+
+    def test_check_admin_role(self):
+        a = SAMLAuthenticator()
+        a.admin_roles = 'admin1'
+
+        assert a._check_admin_role(['admin1'])
+        assert a._check_admin_role(['admin1', 'admin2'])
+
+    def test_check_admin_roles(self):
+        a = SAMLAuthenticator()
+        a.admin_roles='admin1, admin2, admin3'
+
+        assert a._check_admin_role(['admin2'])
+        assert a._check_admin_role(['admin2', 'admin3'])
+        assert a._check_admin_role(['admin1', 'nogroup1'])
+
+    def test_check_admin_role_fails(self):
+        a = SAMLAuthenticator()
+        a.admin_roles='admin1,admin2,admin3'
+
+        assert not a._check_admin_role([])
+        assert not a._check_admin_role(['nogroup1'])
+        assert not a._check_admin_role(['nogroup1', 'nogroup2'])
+
 class TestValidRolesConfig(unittest.TestCase):
 
     def test_no_xpath_no_roles_run_default(self):
@@ -674,7 +699,13 @@ class TestAuthenticate(unittest.TestCase):
         a = SAMLAuthenticator()
         a.metadata_content = saml_data.metadata_xml
 
-        assert 'tom' == a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response})
+        user_tom = {
+            'name': 'tom',
+            'auth_state': {
+                'roles': []
+            }
+        }
+        assert user_tom == a._authenticate(None, {a.login_post_field: saml_data.b64encoded_response})
         mock_datetime.now.assert_called_once_with(timezone.utc)
         mock_pwd.getpwnam.assert_called_once_with('tom')
 
