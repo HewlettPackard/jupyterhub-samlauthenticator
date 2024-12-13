@@ -22,7 +22,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 from setuptools import setup
 
-version = '0.0.9'
+version = '0.0.10'
 
 with open('requirements.txt', 'r') as req_file, \
         open('test_requirements.txt', 'r') as test_req_file, \
@@ -52,6 +52,11 @@ with open('requirements.txt', 'r') as req_file, \
             "Programming Language :: Python :: 3.6",
             "Programming Language :: Python :: 3.7",
             "Programming Language :: Python :: 3.8",
+            "Programming Language :: Python :: 3.9",
+            "Programming Language :: Python :: 3.10",
+            "Programming Language :: Python :: 3.11",
+            "Programming Language :: Python :: 3.12",
+            "Programming Language :: Python :: 3.13",
             "License :: OSI Approved :: MIT License",
             "Operating System :: OS Independent",
         ],
