@@ -1,6 +1,10 @@
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+license-files = ["LICENSE.txt"]
+
 [project]
 name = "jupyterhub-samlauthenticator"
 version = "0.0.10"
