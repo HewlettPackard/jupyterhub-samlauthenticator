@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "jupyterhub-samlauthenticator"
+version = "0.0.10"
+authors = [
+  { name="Tom Kelley", email="distortedsignal@gmail.com" },
+]
+description = "SAML Authenticator for JupyterHub"
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = { file = "LICENSE.txt" }
+
+[project.urls]
+Homepage = "https://github.com/Hewlett-Packard/jupyterhub-samlauthenticator"
+Issues = "https://github.com/Hewlett-Packard/jupyterhub-samlauthenticator/issues"
