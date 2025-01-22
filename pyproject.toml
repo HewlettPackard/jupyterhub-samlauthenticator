@@ -14,7 +14,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
-license = { file = "LICENSE.txt" }
+license = { text = "MIT" }
 
 [project.urls]
 Homepage = "https://github.com/Hewlett-Packard/jupyterhub-samlauthenticator"

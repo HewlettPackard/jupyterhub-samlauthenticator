@@ -1,3 +1,4 @@
 include requirements.txt
 include test_requirements.txt
 include ATTRIBUTION.md
+include LICENSE.txt
