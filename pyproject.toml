@@ -1,13 +1,13 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = [ "setuptools>=61.0" ]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-license-files = ["LICENSE.txt"]
+license-files = [ "LICENSE.txt" ]
 
 [project]
 name = "jupyterhub-samlauthenticator"
-version = "0.0.10"
+version = "0.0.11"
 authors = [
   { name="Tom Kelley", email="distortedsignal@gmail.com" },
 ]
@@ -15,11 +15,26 @@ description = "SAML Authenticator for JupyterHub"
 readme = "README.md"
 requires-python = ">=3.6"
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
 ]
 license = { text = "MIT" }
+dependencies = [
+  "Jinja2>=2.4",
+  "jupyterhub>=0.9.0",
+  "lxml>=4.2.1",
+  "signxml>=2.6.0",
+  "pytz>=2019.1",
+]
 
 [project.urls]
-Homepage = "https://github.com/Hewlett-Packard/jupyterhub-samlauthenticator"
-Issues = "https://github.com/Hewlett-Packard/jupyterhub-samlauthenticator/issues"
+Homepage = "https://github.com/HewlettPackard/jupyterhub-samlauthenticator"
+Issues = "https://github.com/HewlettPackard/jupyterhub-samlauthenticator/issues"
