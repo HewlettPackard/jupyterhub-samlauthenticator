@@ -21,13 +21,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 '''
 
 # Imports from python standard library
-from base64 import b64decode
+from base64 import b64decode, b64encode
 from datetime import datetime, timezone
 from urllib.request import urlopen
+from urllib.parse import quote_plus
 
 import asyncio
 import pwd
 import subprocess
+import zlib
 
 # Imports to work with JupyterHub
 from jupyterhub.auth import Authenticator
@@ -705,7 +707,7 @@ class SAMLAuthenticator(Authenticator):
     def authenticate(self, handler, data):
         return self._authenticate(handler, data)
 
-    def _get_redirect_from_metadata_and_redirect(authenticator_self, element_name, handler_self):
+    def _get_redirect_from_metadata(authenticator_self, element_name, handler_self):
         saml_metadata_etree = authenticator_self._get_saml_metadata_etree()
 
         handler_self.log.debug('Got metadata etree')
@@ -724,9 +726,27 @@ class SAMLAuthenticator(Authenticator):
 
         redirect_link_getter = xpath_with_namespaces(final_xpath)
 
+        return redirect_link_getter(saml_metadata_etree)[0]
+
+    def _get_redirect_from_metadata_and_redirect(authenticator_self, element_name, handler_self, add_authn_request=False):
+
+        redirect_url = authenticator_self._get_redirect_from_metadata(element_name, handler_self) 
+
         # Here permanent MUST BE False - otherwise the /hub/logout GET will not be fired
         # by the user's browser.
-        handler_self.redirect(redirect_link_getter(saml_metadata_etree)[0], permanent=False)
+        if add_authn_request:
+            authn_requst = quote_plus(b64encode(zlib.compress(
+                authenticator_self._make_authn_request(element_name, handler_self).encode('utf8')
+                )[2:-4]))
+            handler_self.redirect(
+                f"{redirect_url}?SAMLRequest={authn_requst}", 
+                permanent=False
+            )
+        else:
+            handler_self.redirect(
+                redirect_url, 
+                permanent=False
+            )
 
     def _make_org_metadata(self):
         if self.organization_name or \
@@ -762,6 +782,28 @@ class SAMLAuthenticator(Authenticator):
                                                 organizationUrl=org_url_elem)
 
         return ''
+
+    def _make_authn_request(authenticator_self, element_name, handler_self):
+        authn_request_text = '''<?xml version="1.0" encoding="UTF-8"?>
+<samlp:AuthnRequest  
+        ID="0" 
+        Version="2.0" 
+        IssueInstant="{{ issue_time }}" 
+        Destination="{{ sso_login_url }}" 
+        ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" 
+        AssertionConsumerServiceURL="{{ acs_url }}" 
+        ProviderName=""
+        xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">
+    <saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">{{ audience }}</saml:Issuer>
+</samlp:AuthnRequest>'''
+
+        xml_template = Template(authn_request_text)
+        return xml_template.render(
+            issue_time = datetime.now().strftime(authenticator_self.time_format_string),
+            sso_login_url = authenticator_self._get_redirect_from_metadata(element_name, handler_self),
+            acs_url = authenticator_self.acs_endpoint_url,
+            audience = authenticator_self.audience
+        )
 
     def _make_sp_metadata(authenticator_self, meta_handler_self):
         metadata_text = '''<?xml version="1.0"?>
@@ -804,8 +846,11 @@ class SAMLAuthenticator(Authenticator):
 
             async def get(login_handler_self):
                 login_handler_self.log.info('Starting SP-initiated SAML Login')
-                authenticator_self._get_redirect_from_metadata_and_redirect('md:SingleSignOnService',
-                                                                            login_handler_self)
+                authenticator_self._get_redirect_from_metadata_and_redirect(
+                    'md:SingleSignOnService',
+                    login_handler_self,
+                    add_authn_request=True
+                )
 
         class SAMLLogoutHandler(LogoutHandler):
             # TODO: When the time is right to force users onto JupyterHub 1.0.0,
@@ -848,8 +893,11 @@ class SAMLAuthenticator(Authenticator):
                 forward_on_logout = True if authenticator_self.slo_forward_on_logout else False
                 forwad_on_logout = True if authenticator_self.slo_forwad_on_logout else False
                 if forward_on_logout or forwad_on_logout:
-                    authenticator_self._get_redirect_from_metadata_and_redirect('md:SingleLogoutService',
-                                                                                logout_handler_self)
+                    authenticator_self._get_redirect_from_metadata_and_redirect(
+                        'md:SingleLogoutService',
+                        logout_handler_self,
+                        add_authn_request=False
+                    )
                 else:
                     html = logout_handler_self.render_template('logout.html', sync=True)
                     logout_handler_self.finish(html)
